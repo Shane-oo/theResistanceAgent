@@ -3,15 +3,18 @@ import random
 import numpy as np
 import pandas as pd
 
+
+missionNum = 0
 class myAgent(Agent):        
     '''My agent in the game The Resistance'''
-
+    missionNum = 0
     def __init__(self, name='Rando'):
         '''
         Initialises the agent.
         Nothing to do here.
         '''
         self.name = name
+        
 
     def new_game(self, number_of_players, player_number, spy_list):
         '''
@@ -51,6 +54,11 @@ class myAgent(Agent):
         to be returned. 
         betrayals_required are the number of betrayals required for the mission to fail.
         '''
+        # For the first mission 
+        # I want my agent to pick itself
+        # and pick at random the team members for mission
+        if(missionNum ==0 and not self.is_spy()):
+            print()
         team = []
         while len(team)<team_size:
             agent = random.randrange(team_size)
@@ -65,6 +73,7 @@ class myAgent(Agent):
         proposer is an int between 0 and number_of_players and is the index of the player who proposed the mission.
         The function should return True if the vote is for the mission, and False if the vote is against the mission.
         '''
+        print("missionNum= ",missionNum)
         return random.random()<0.5
 
     def vote_outcome(self, mission, proposer, votes):
@@ -80,6 +89,7 @@ class myAgent(Agent):
         it just a list of positive voters"
         '''
         #nothing to do here
+        print('2')
         pass
 
     def betray(self, mission, proposer):
@@ -90,6 +100,7 @@ class myAgent(Agent):
         The method should return True if this agent chooses to betray the mission, and False otherwise. 
         By default, spies will betray 30% of the time. 
         '''
+        print("3")
         if self.is_spy():
             return random.random()<0.3
 
@@ -102,6 +113,9 @@ class myAgent(Agent):
         and mission_success is True if there were not enough betrayals to cause the mission to fail, False otherwise.
         It iss not expected or required for this function to return anything.
         '''
+        if(mission_success):
+            # onto the next mission
+            globals()['missionNum'] +=1
         #nothing to do here
         pass
 
@@ -112,6 +126,7 @@ class myAgent(Agent):
         missions_failed, the number of missions (0-3) that have failed.
         '''
         #nothing to do here
+        
         pass
     
     def game_outcome(self, spies_win, spies):
@@ -121,6 +136,7 @@ class myAgent(Agent):
         spies, a list of the player indexes for the spies.
         '''
         #nothing to do here
+        print("6")
         pass
 
 
