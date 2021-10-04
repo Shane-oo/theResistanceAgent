@@ -123,8 +123,8 @@ class myAgent(Agent):
         
         print("SIZE of VOTES",len(votes),votes)
 
-        if(len(votes)-1 == self.number_of_players ):
-            print("SHANE",votes)
+       
+        
         # Mission is approved
         if(not self.is_spy()):
             if(len(votes)>=self.number_of_players//2):
