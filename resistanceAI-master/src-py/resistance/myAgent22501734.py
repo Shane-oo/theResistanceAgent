@@ -1,8 +1,10 @@
 from agent import Agent
 import random
+import numpy as np
+import pandas as pd
 
-class RandomAgent(Agent):        
-    '''A sample implementation of a random agent in the game The Resistance'''
+class myAgent(Agent):        
+    '''My agent in the game The Resistance'''
 
     def __init__(self, name='Rando'):
         '''
@@ -20,6 +22,22 @@ class RandomAgent(Agent):
         self.number_of_players = number_of_players
         self.player_number = player_number
         self.spy_list = spy_list
+        print("MyAgent playernum",player_number)
+        if(not self.is_spy()):
+            resistanceTable = []
+            for i in range(number_of_players+1):
+                if i == player_number:
+                    continue
+                else:
+                    resistanceTable.append([i,0,0,0,0,0])
+                    
+            df = pd.DataFrame(resistanceTable,columns = ['PlayerNum','votedForFailedMission',
+            'wentOnFailedMission','selTeamFailedMission','rejectedTeamProps','isSpy'])
+            # how to update specific value
+            #df.loc[df.PlayerNum == 1,'PlayerNum'] = df.PlayerNum +1
+            print(df)
+        else:
+            print("Im a spy")
 
     def is_spy(self):
         '''
@@ -33,10 +51,8 @@ class RandomAgent(Agent):
         to be returned. 
         betrayals_required are the number of betrayals required for the mission to fail.
         '''
-       
         team = []
         while len(team)<team_size:
-            
             agent = random.randrange(team_size)
             if agent not in team:
                 team.append(agent)
@@ -58,6 +74,10 @@ class RandomAgent(Agent):
         proposer is an int between 0 and number_of_players and is the index of the player who proposed the mission.
         votes is a dictionary mapping player indexes to Booleans (True if they voted for the mission, False otherwise).
         No return value is required or expected.
+        '''
+        '''
+        "votes just returns a list of players that voted for the mission to go ahead
+        it just a list of positive voters"
         '''
         #nothing to do here
         pass
@@ -89,7 +109,7 @@ class RandomAgent(Agent):
         '''
         basic informative function, where the parameters indicate:
         rounds_complete, the number of rounds (0-5) that have been completed
-        missions_failed, the numbe of missions (0-3) that have failed.
+        missions_failed, the number of missions (0-3) that have failed.
         '''
         #nothing to do here
         pass
