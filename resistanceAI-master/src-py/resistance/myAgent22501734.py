@@ -4,16 +4,22 @@ import numpy as np
 import pandas as pd
 
 
-missionNum = 0
+
+
 class myAgent(Agent):        
-    '''My agent in the game The Resistance'''
+    #initialise class attributes
     missionNum = 0
+    agent_number = None
+
+    '''My agent in the game The Resistance'''
     def __init__(self, name='Rando'):
         '''
         Initialises the agent.
         Nothing to do here.
         '''
         self.name = name
+ 
+        
         
 
     def new_game(self, number_of_players, player_number, spy_list):
@@ -24,8 +30,9 @@ class myAgent(Agent):
         '''
         self.number_of_players = number_of_players
         self.player_number = player_number
+        myAgent.agent_number = player_number
         self.spy_list = spy_list
-        print("MyAgent playernum",player_number)
+        print("MyAgent playernum",myAgent.agent_number)
         if(not self.is_spy()):
             resistanceTable = []
             for i in range(number_of_players+1):
@@ -54,16 +61,29 @@ class myAgent(Agent):
         to be returned. 
         betrayals_required are the number of betrayals required for the mission to fail.
         '''
-        # For the first mission 
-        # I want my agent to pick itself
-        # and pick at random the team members for mission
-        if(missionNum ==0 and not self.is_spy()):
-            print()
         team = []
-        while len(team)<team_size:
-            agent = random.randrange(team_size)
-            if agent not in team:
-                team.append(agent)
+        if(not self.is_spy()):
+            # For the first mission as resistance
+            # I want my agent to pick itself and pick at random the team members for mission
+            if(myAgent.missionNum ==0):
+                team.append(myAgent.agent_number)
+                while len(team)<team_size:
+                    agent = random.randrange(team_size)
+                    if agent not in team:
+                        team.append(agent)
+            else:
+                team.append(myAgent.agent_number)
+                # change this to pick the most trusting players
+                while len(team)<team_size:
+                    agent = random.randrange(team_size)
+                    if agent not in team:
+                        team.append(agent)
+        # agent is spy
+        else:
+            while len(team)<team_size:
+                agent = random.randrange(team_size)
+                if agent not in team:
+                    team.append(agent)
         return team        
 
     def vote(self, mission, proposer):
@@ -73,7 +93,12 @@ class myAgent(Agent):
         proposer is an int between 0 and number_of_players and is the index of the player who proposed the mission.
         The function should return True if the vote is for the mission, and False if the vote is against the mission.
         '''
-        print("missionNum= ",missionNum)
+        print("missionNum= ",myAgent.missionNum)
+        #always return True if agent is the proposer
+        if(proposer == myAgent.agent_number):
+            print("agent is proposer return True")
+            return True
+        
         return random.random()<0.5
 
     def vote_outcome(self, mission, proposer, votes):
@@ -115,7 +140,7 @@ class myAgent(Agent):
         '''
         if(mission_success):
             # onto the next mission
-            globals()['missionNum'] +=1
+            myAgent.missionNum +=1
         #nothing to do here
         pass
 
