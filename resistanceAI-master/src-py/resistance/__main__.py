@@ -8,7 +8,8 @@ agents = [myAgent(name='r1'),
         RandomAgent(name='r4'),  
         RandomAgent(name='r5'),  
         RandomAgent(name='r6'),  
-        RandomAgent(name='r7')]
+        RandomAgent(name='r7'),
+        ]
 
 game = Game(agents)
 game.play()
