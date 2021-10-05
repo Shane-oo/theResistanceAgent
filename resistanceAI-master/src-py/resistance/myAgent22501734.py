@@ -1,8 +1,7 @@
 from agent import Agent
 import random
-import numpy as np
-import pandas as pd
-from game import Game
+
+
 # Global variables
 #indexs of varibales in dataset
 VOTED_FOR_FAILED_MISSION = 0
@@ -321,9 +320,6 @@ class myAgent(Agent):
 
                         self.resistanceData[agent][WENT_ON_FAILED_MISSION] += failedMissionsCount*(betrayals/sussMembers)
 
-
-                    #
-           
         print(self.resistanceData)
         print("Outed spies",self.outedSpies)
         #nothing to do here
@@ -347,7 +343,7 @@ class myAgent(Agent):
         spies, a list of the player indexes for the spies.
         '''
         #nothing to do here
-        print("6")
+        
         pass
 
     
