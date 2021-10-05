@@ -2,9 +2,14 @@ from agent import Agent
 import random
 import numpy as np
 import pandas as pd
-
-
-
+from game import Game
+# Global variables
+#indexs of varibales in dataset
+VOTED_FOR_FAILED_MISSION = 0
+WENT_ON_FAILED_MISSION = 1
+PROP_TEAM_FAILED_MISSION = 2
+REJECTED_TEAM_SUCCESFUL_MISSION = 3 
+IS_SPY = 4
 
 class myAgent(Agent):        
     #initialise class attributes
@@ -20,9 +25,10 @@ class myAgent(Agent):
         self.name = name
         self.missionNum = 0
         
-        self.df = None
-
- 
+       # self.df = None
+        self.resistanceData = []
+        self.failedMissions = []
+        self.propFailedMissions = []
         
         
 
@@ -34,22 +40,25 @@ class myAgent(Agent):
         '''
         self.number_of_players = number_of_players
         self.player_number = player_number
-       
+        
         self.spy_list = spy_list
         print("MyAgent playernum",self.player_number)
         if(not self.is_spy()):
             resistanceTable = []
-            for i in range(number_of_players+1):
+            for i in range(number_of_players):
+                
                 if i == player_number:
-                    continue
+                    resistanceTable.append(["MyAgent"])
                 else:
-                    resistanceTable.append([i,0,0,0,0,0])
+                    resistanceTable.append([0,0,0,0,0])
                     
-            self.df = pd.DataFrame(resistanceTable,columns = ['PlayerNum','votedForFailedMission',
-            'wentOnFailedMission','selTeamFailedMission','rejectedTeamProps','isSpy'])
+            #self.df = pd.DataFrame(resistanceTable,columns = ['PlayerNum','votedForFailedMission',
+            #'wentOnFailedMission','selTeamFailedMission','rejectedTeamProps','isSpy'])
+            self.resistanceData = resistanceTable
             # how to update specific value
             #df.loc[df.PlayerNum == 1,'PlayerNum'] = df.PlayerNum +1
-            
+            #print(self.df)
+            print(self.resistanceData)
         else:
             print("Im a spy")
 
@@ -92,14 +101,15 @@ class myAgent(Agent):
         return team        
 
     def vote(self, mission, proposer):
-        print("FUCK ME",proposer)
+        print("MY player number",self.player_number)
+        print("The proposer = ",proposer)
         '''
         mission is a list of agents to be sent on a mission. 
         The agents on the mission are distinct and indexed between 0 and number_of_players.
         proposer is an int between 0 and number_of_players and is the index of the player who proposed the mission.
         The function should return True if the vote is for the mission, and False if the vote is against the mission.
         '''
-        print("missionNum= ",self.missionNum)
+        #print("missionNum= ",self.missionNum)
         #always return True if agent is the proposer
         if(proposer == self.player_number):
             print("agent is proposer return True")
@@ -108,6 +118,8 @@ class myAgent(Agent):
         return random.random()<0.5
 
     def vote_outcome(self, mission, proposer, votes):
+        self.agentsWhoVoted = []
+        self.agentsWhoVoted = votes
         '''
         mission is a list of agents to be sent on a mission. 
         The agents on the mission are distinct and indexed between 0 and number_of_players.
@@ -128,8 +140,8 @@ class myAgent(Agent):
         # Mission is approved
         if(not self.is_spy()):
             if(len(votes)>=self.number_of_players//2):
-           
-                print(self.df)
+                print("Vote was successful")
+                
         pass
 
     def betray(self, mission, proposer):
@@ -140,7 +152,7 @@ class myAgent(Agent):
         The method should return True if this agent chooses to betray the mission, and False otherwise. 
         By default, spies will betray 30% of the time. 
         '''
-        print("3")
+       
         if self.is_spy():
             return random.random()<0.3
 
@@ -155,8 +167,39 @@ class myAgent(Agent):
         '''
         if(mission_success):
             # onto the next mission
+            for i in range(self.number_of_players):
+                if i not in self.agentsWhoVoted and i is not self.player_number:
+                    # Increases sussness if agent did not want a successful mission to happen
+                    amountThatVotedAgainst = self.number_of_players-len(self.agentsWhoVoted)
+                    self.resistanceData[i][REJECTED_TEAM_SUCCESFUL_MISSION] += (self.number_of_players/amountThatVotedAgainst)
             self.missionNum +=1
-        print("PROPERSER",proposer)
+        # failed mission
+        else:
+            for agent in self.agentsWhoVoted:
+                if(agent is not self.player_number):
+                    # Increase sussness if agent most liekly voted knowing mission would fail
+                    self.resistanceData[agent][VOTED_FOR_FAILED_MISSION]+= (self.number_of_players/len(self.agentsWhoVoted))
+            # Increment the amounts that add to untrustworthyness
+           
+            if(proposer is not self.player_number):
+                self.propFailedMissions.append(proposer)
+                propFailedMissionsCount = self.propFailedMissions.count(proposer)
+                if(propFailedMissionsCount == 0):
+                    propFailedMissionsCount = 1
+                self.resistanceData[proposer][PROP_TEAM_FAILED_MISSION] += 1*propFailedMissionsCount
+                if(proposer in mission):
+                    self.resistanceData[proposer][PROP_TEAM_FAILED_MISSION] += (len(mission)/(betrayals))
+            #wentOnFailedMission
+            # Could weight this with how many betrayals there were
+            for agent in mission:
+                if(agent is not self.player_number):
+                    self.failedMissions.append(agent)
+                    failedMissionsCount = self.failedMissions.count(agent)
+                    if(failedMissionsCount == 0):
+                        failedMissionsCount = 1
+                    self.resistanceData[agent][WENT_ON_FAILED_MISSION] += (len(mission)*failedMissionsCount)/(betrayals)
+           
+        print(self.resistanceData)
         #nothing to do here
         pass
 
