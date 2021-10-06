@@ -8,7 +8,8 @@ VOTED_FOR_FAILED_MISSION = 0
 WENT_ON_FAILED_MISSION = 1
 PROP_TEAM_FAILED_MISSION = 2
 REJECTED_TEAM_SUCCESFUL_MISSION = 3 
-IS_SPY = 4
+VOTED_AGAINST_TEAM_PROPOSAL = 4
+IS_SPY = 5
 
 # Logical playing Agent
 
@@ -26,11 +27,14 @@ class myAgent(Agent):
         self.missionNum = 1
         self.spyWins = 0
         self.resistanceWins = 0
+        self.roundCount =0
         
        #Resistance Agent variables
         self.resistanceData = []
         self.failedMissions = []
         self.propFailedMissions = []
+        self.wentOnSuccessfulMissions = []
+        self.wentOnFailedMissions = []
         self.outedSpies = []
 
         
@@ -54,7 +58,7 @@ class myAgent(Agent):
                 if i == player_number:
                     resistanceTable.append(["MyAgent"])
                 else:
-                    resistanceTable.append([0,0,0,0,0])
+                    resistanceTable.append([0,0,0,0,0,0])
                     
             self.resistanceData = resistanceTable
 
@@ -88,15 +92,26 @@ class myAgent(Agent):
                         team.append(agent)
             else:
                 team.append(self.player_number)
-                # change this to pick the most trusting players
-                while len(team)<team_size:
-                    agent = random.randrange(team_size)
-                    if agent not in team:
-                        team.append(agent)
-
+                # pick members that are the most trusting
+                for trustingAgents in self.wentOnSuccessfulMissions:
+                    if(len(team)<team_size):
+                        agent = random.choice(self.wentOnSuccessfulMissions)
+                        if agent not in team:
+                            team.append(agent)
+                # if still need team members
+                if(len(team)<team_size):
+                    # pick members that have not failed any missions yet
+                    for i in range(self.number_of_players):
+                        if((len(team)<team_size) and i not in self.wentOnFailedMissions):
+                            if i not in team:
+                                team.append(i)
+                    # last resort is two pick from random potentially picking member that went on failed mission
+                    while len(team)<team_size:
+                        agent = random.randrange(self.number_of_players)
+                        if agent not in team:
+                            team.append(agent)
         ##################### Spy Moves ###############################
         else:
-            
             if(self.missionNum ==1):
                 team.append(self.player_number)
                 # put self on team with two resistance players
@@ -152,15 +167,15 @@ class myAgent(Agent):
         return team        
 
     def vote(self, mission, proposer):
-        print("MY player number",self.player_number)
+        print("ROUND COUNT",)
         print("The proposer = ",proposer)
+        return False
         '''
         mission is a list of agents to be sent on a mission. 
         The agents on the mission are distinct and indexed between 0 and number_of_players.
         proposer is an int between 0 and number_of_players and is the index of the player who proposed the mission.
         The function should return True if the vote is for the mission, and False if the vote is against the mission.
         '''
-        #print("missionNum= ",self.missionNum)
         #always return True if agent is the proposer
         if(proposer == self.player_number):
             print("agent is proposer return True")
@@ -197,6 +212,26 @@ class myAgent(Agent):
                     return True
                         
 
+        else:
+            if(self.missionNum ==1 ):
+                # no info to go off of for mission 1
+                return True
+            # if round count ==5 return true
+            trustedAgentsCount = sum(el in self.wentOnSuccessfulMissions for el in mission)
+            # All trustworthy members on team
+            if(trustedAgentsCount == len(mission)):
+                return True
+            failedAgentsCount = sum(el in self.wentOnFailedMissions for el in mission)
+            if(failedAgentsCount >0):
+                return False
+            # If there are some trust worthy members and members yet to be on mission return True
+            if(trustedAgentsCount>0 and failedAgentsCount ==0):
+                return True
+            # No info about anyone on the team
+            if(trustedAgentsCount == 0 and failedAgentsCount == 0): 
+                # want members you trust on the team but also could give others a chance
+                # 50% to agree on a team that has no info
+                return random.random()<0.5
 
         #Vote on how trustworthy members going on mission are
         return random.random()<0.5
@@ -204,6 +239,7 @@ class myAgent(Agent):
     def vote_outcome(self, mission, proposer, votes):
         self.agentsWhoVoted = []
         self.agentsWhoVoted = votes
+        self.roundCount +=1
         '''
         mission is a list of agents to be sent on a mission. 
         The agents on the mission are distinct and indexed between 0 and number_of_players.
@@ -216,11 +252,26 @@ class myAgent(Agent):
         it just a list of positive voters"
         '''
        
-        # Mission is approved
+        
         if(not self.is_spy()):
-            if(len(votes)>=self.number_of_players//2):
-                print("Vote was successful")
-                
+            # If agent was asked on mission and declined it is very suss
+            # extra sussness if multiple mission members vote no
+            missionMembersDeclining = 0
+            for agents in mission:
+                if agents not in votes:
+                    missionMembersDeclining +=1
+            for ages in mission:
+                if agents not in votes:
+                    if agents == self.player_number:
+                        continue
+                    self.resistanceData[agents][VOTED_AGAINST_TEAM_PROPOSAL] += missionMembersDeclining
+            
+            for i in range(self.number_of_players):
+                # if agent votes no for mission its suss
+                if i not in votes:
+                    if i == self.player_number:
+                        continue
+                    self.resistanceData[i][VOTED_AGAINST_TEAM_PROPOSAL] += self.number_of_players/(self.number_of_players-len(votes))
         pass
 
     def betray(self, mission, proposer):
@@ -266,6 +317,7 @@ class myAgent(Agent):
          #   return random.random()<0.3
 
     def mission_outcome(self, mission, proposer, betrayals, mission_success):
+        self.roundCount = 0
         '''
         mission is a list of agents that were sent on the mission. 
         The agents on the mission are distinct and indexed between 0 and number_of_players.
@@ -277,8 +329,12 @@ class myAgent(Agent):
         if(not self.is_spy()):
             if(mission_success):
                 self.resistanceWins += 1
-
+                for agents in mission:
+                    if agents == self.player_number:
+                        continue
+                    self.wentOnSuccessfulMissions.append(agents)
                 for i in range(self.number_of_players):
+    
                     if i not in self.agentsWhoVoted and i is not self.player_number:
                         # Increases sussness if agent did not want a successful mission to happen
                         amountThatVotedAgainst = self.number_of_players-len(self.agentsWhoVoted)
@@ -287,6 +343,7 @@ class myAgent(Agent):
             # failed mission
             else:
                 self.spyWins += 1
+                
                 for agent in self.agentsWhoVoted:
                     if(agent is not self.player_number):
                         # Increase sussness if agent most liekly voted knowing mission would fail
@@ -306,9 +363,15 @@ class myAgent(Agent):
 
                 for agent in mission:
                     # check for outed spies
+                    
                     self.stupid_spies_check(agent,proposer,mission,betrayals)
 
                     if(agent is not self.player_number):
+                        self.wentOnFailedMissions.append(agent)
+                        # remove agents from wentOnSuccessfulMissions if exist in wentOnFailedMissions
+                        # as they are now untrustworthy
+                        if (agent in self.wentOnSuccessfulMissions):
+                            self.wentOnSuccessfulMissions.remove(agent)
                         self.failedMissions.append(agent)
                         failedMissionsCount = self.failedMissions.count(agent)
                         if(failedMissionsCount == 0):
@@ -323,6 +386,7 @@ class myAgent(Agent):
         print(self.resistanceData)
         print("Outed spies",self.outedSpies)
         #nothing to do here
+
         self.missionNum +=1
         pass
 
