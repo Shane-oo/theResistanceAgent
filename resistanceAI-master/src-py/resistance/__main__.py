@@ -13,9 +13,11 @@ agents = [myAgent(name='r1'),
         myAgent(name='r9'),
         myAgent(name='r10'),
         ]
-
+resistanceData = []
 game = Game(agents)
 game.play()
-print(game)
+resistanceData.append(myAgent.returnValues(agents[0]))
+print(resistanceData)
+#print(game)
 
 

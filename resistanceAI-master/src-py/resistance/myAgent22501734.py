@@ -4,10 +4,10 @@ import random
 
 # Global variables
 #indexs of varibales in dataset
-VOTED_FOR_FAILED_MISSION = 0
-WENT_ON_FAILED_MISSION = 1
-PROP_TEAM_FAILED_MISSION = 2
-REJECTED_TEAM_SUCCESFUL_MISSION = 3 
+VOTED_FOR_FAILED_MISSION = 0#
+WENT_ON_FAILED_MISSION = 1#
+PROP_TEAM_FAILED_MISSION = 2#
+REJECTED_TEAM_SUCCESFUL_MISSION = 3 #
 VOTED_AGAINST_TEAM_PROPOSAL = 4
 IS_SPY = 5
 
@@ -27,7 +27,7 @@ class myAgent(Agent):
         self.missionNum = 1
         self.spyWins = 0
         self.resistanceWins = 0
-        self.roundCount =0
+        self.roundCount = 1
         
        #Resistance Agent variables
         self.resistanceData = []
@@ -105,37 +105,22 @@ class myAgent(Agent):
                         if((len(team)<team_size) and i not in self.wentOnFailedMissions):
                             if i not in team:
                                 team.append(i)
-                    # last resort is two pick from random potentially picking member that went on failed mission
+                    # last resort is to pick from random potentially picking member that potentially went on failed mission
+                    # but do not pick any agents that have been found to be spies
                     while len(team)<team_size:
                         agent = random.randrange(self.number_of_players)
-                        if agent not in team:
+                        if agent not in team and agent not in self.outedSpies:
                             team.append(agent)
         ##################### Spy Moves ###############################
         else:
-            if(self.missionNum ==1):
+            if(self.missionNum ==1 and self.missionNum !=4):
                 team.append(self.player_number)
-                # put self on team with two resistance players
-                
+                # put self on team with only other reistance members
                 while len(team)<team_size:
-                    
                     agent = random.randrange(self.number_of_players)
                     if ((agent not in team) and agent not in self.spy_list):
-                        
-                        team.append(agent)
-            
-            elif(self.missionNum != 1 and self.missionNum !=4):
-                
-                team.append(self.player_number)
-                # put self on team with two resistance players
-                while len(team)<team_size:
-                   
-                    agent = random.randrange(self.number_of_players)
-                   
-                    if ((agent not in team) and ( agent not in self.spy_list)):
-                        
                         team.append(agent)
             else:# mission 4
-                
                 team.append(self.player_number)
                 # need to win mission 4 and 5 to win game
                 if(self.spyWins == 1):
@@ -167,9 +152,9 @@ class myAgent(Agent):
         return team        
 
     def vote(self, mission, proposer):
-        print("ROUND COUNT",)
+        print("ROUND COUNT",self.roundCount)
         print("The proposer = ",proposer)
-        return False
+        
         '''
         mission is a list of agents to be sent on a mission. 
         The agents on the mission are distinct and indexed between 0 and number_of_players.
@@ -216,7 +201,14 @@ class myAgent(Agent):
             if(self.missionNum ==1 ):
                 # no info to go off of for mission 1
                 return True
-            # if round count ==5 return true
+            
+            
+            # should vote yes if in last round to avoid a mission fail     
+            if(self.roundCount == 5):
+                return True
+            outedSpiesCount = sum(el in self.outedSpies for el in mission)
+            if(outedSpiesCount!=0):
+                return False
             trustedAgentsCount = sum(el in self.wentOnSuccessfulMissions for el in mission)
             # All trustworthy members on team
             if(trustedAgentsCount == len(mission)):
@@ -233,8 +225,8 @@ class myAgent(Agent):
                 # 50% to agree on a team that has no info
                 return random.random()<0.5
 
-        #Vote on how trustworthy members going on mission are
-        return random.random()<0.5
+       
+        
 
     def vote_outcome(self, mission, proposer, votes):
         self.agentsWhoVoted = []
@@ -251,8 +243,6 @@ class myAgent(Agent):
         "votes just returns a list of players that voted for the mission to go ahead
         it just a list of positive voters"
         '''
-       
-        
         if(not self.is_spy()):
             # If agent was asked on mission and declined it is very suss
             # extra sussness if multiple mission members vote no
@@ -260,7 +250,7 @@ class myAgent(Agent):
             for agents in mission:
                 if agents not in votes:
                     missionMembersDeclining +=1
-            for ages in mission:
+            for agents in mission:
                 if agents not in votes:
                     if agents == self.player_number:
                         continue
@@ -268,10 +258,19 @@ class myAgent(Agent):
             
             for i in range(self.number_of_players):
                 # if agent votes no for mission its suss
-                if i not in votes:
-                    if i == self.player_number:
+                if i == self.player_number:
                         continue
+                if i not in votes:
+                   
                     self.resistanceData[i][VOTED_AGAINST_TEAM_PROPOSAL] += self.number_of_players/(self.number_of_players-len(votes))
+                    # If they say not to teams that contatin successful mission members its suss
+                    SuccessfulMissionsMembers = sum(el in self.wentOnSuccessfulMissions for el in mission)
+                    self.resistanceData[i][VOTED_AGAINST_TEAM_PROPOSAL] += SuccessfulMissionsMembers
+
+                if i in votes:
+                    # If they vote yes for a mission that contains members that prevousily failed missions its suss
+                    failedPriorMissionsMembers = sum(el in self.wentOnFailedMissions for el in mission)
+                    self.resistanceData[i][VOTED_AGAINST_TEAM_PROPOSAL] += failedPriorMissionsMembers
         pass
 
     def betray(self, mission, proposer):
@@ -317,7 +316,7 @@ class myAgent(Agent):
          #   return random.random()<0.3
 
     def mission_outcome(self, mission, proposer, betrayals, mission_success):
-        self.roundCount = 0
+        self.roundCount = 1
         '''
         mission is a list of agents that were sent on the mission. 
         The agents on the mission are distinct and indexed between 0 and number_of_players.
@@ -391,6 +390,7 @@ class myAgent(Agent):
         pass
 
     def round_outcome(self, rounds_complete, missions_failed):
+        self.roundCount = 1
         '''
         basic informative function, where the parameters indicate:
         rounds_complete, the number of rounds (0-5) that have been completed
@@ -407,7 +407,6 @@ class myAgent(Agent):
         spies, a list of the player indexes for the spies.
         '''
         #nothing to do here
-        
         pass
 
     
@@ -435,3 +434,7 @@ class myAgent(Agent):
                 self.outedSpies.append(agent)
             if(len(mission) == 5 and betrayals ==5 ):
                 self.outedSpies.append(agent)
+
+    def returnValues(self):
+        
+        return self.resistanceData
