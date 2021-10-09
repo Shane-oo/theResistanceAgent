@@ -16,6 +16,7 @@ class Agent:
             10:[3,4,4,5,5]
             }
     #number of spies for different game sizes
+    #spy_count = {5:2, 6:2, 7:3, 8:3, 9:3, 10:4} 
     spy_count = {5:2, 6:2, 7:3, 8:3, 9:3, 10:4} 
     #e.g. self.betrayals_required[8][3] is the number of betrayals required for the 3rd mission in a game of 8 to fail
     fails_required = {

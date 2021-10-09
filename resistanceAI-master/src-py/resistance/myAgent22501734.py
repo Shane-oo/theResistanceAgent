@@ -174,10 +174,9 @@ class myAgent(Agent):
             elif(self.missionNum != 1 and self.missionNum !=4):
                     # count amount of spies in mission
                     spy_count = sum(el in self.spy_list for el in mission)
-                    if(spy_count == 1 ):
+                    # approve missions that has spies on it but not if mission is full of spies
+                    if(len(mission) != spy_count and spy_count!=0):
                         return True
-                    # if its zero or more return false as to avoid risk of double failing and outing eachother
-                    # or to allow resistance members gain trust in eachother   
                     else:   
                         return False
             else:# mission 4
@@ -195,14 +194,10 @@ class myAgent(Agent):
                 else:
                     # dont care about mission 4 will go for mission 5 win
                     return True
-                        
-
         else:
             if(self.missionNum ==1 ):
                 # no info to go off of for mission 1
                 return True
-            
-            
             # should vote yes if in last round to avoid a mission fail     
             if(self.roundCount == 5):
                 return True
@@ -221,12 +216,11 @@ class myAgent(Agent):
                 return True
             # No info about anyone on the team
             if(trustedAgentsCount == 0 and failedAgentsCount == 0): 
-                # want members you trust on the team but also could give others a chance
-                # 50% to agree on a team that has no info
-                return random.random()<0.5
-
-       
-        
+                # return true as at least you know there is one resistance member
+                if(self.player_number in mission):
+                    return True
+                else:
+                    return False
 
     def vote_outcome(self, mission, proposer, votes):
         self.agentsWhoVoted = []
@@ -261,7 +255,6 @@ class myAgent(Agent):
                 if i == self.player_number:
                         continue
                 if i not in votes:
-                   
                     self.resistanceData[i][VOTED_AGAINST_TEAM_PROPOSAL] += self.number_of_players/(self.number_of_players-len(votes))
                     # If they say not to teams that contatin successful mission members its suss
                     SuccessfulMissionsMembers = sum(el in self.wentOnSuccessfulMissions for el in mission)
@@ -271,6 +264,10 @@ class myAgent(Agent):
                     # If they vote yes for a mission that contains members that prevousily failed missions its suss
                     failedPriorMissionsMembers = sum(el in self.wentOnFailedMissions for el in mission)
                     self.resistanceData[i][VOTED_AGAINST_TEAM_PROPOSAL] += failedPriorMissionsMembers
+                
+                if (i in votes and i not in mission):
+                    # voted for a mission they are not on
+                    self.resistanceData[i][VOTED_AGAINST_TEAM_PROPOSAL] += 1
         pass
 
     def betray(self, mission, proposer):

@@ -2,7 +2,7 @@ from random_agent import RandomAgent
 from myAgent22501734 import myAgent
 from game import Game
 allData =[]
-for i in range(500):
+for i in range(100):
         agents = [myAgent(name='r1'), 
                 myAgent(name='r2'),  
                 myAgent(name='r3'),  
