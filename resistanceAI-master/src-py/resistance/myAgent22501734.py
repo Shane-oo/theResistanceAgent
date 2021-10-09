@@ -435,6 +435,13 @@ class myAgent(Agent):
             if(len(mission) == 5 and betrayals ==5 ):
                 self.outedSpies.append(agent)
 
-    def returnValues(self):
+
+    def returnValues(self,agentIndex):
+        if(self.is_spy()):
+            return (-1,self.spy_list)
+        else:
+            return (1,self.resistanceData)
+    def returnMyAgentInfo(self,myAgentIndex):
+        print("WHY CUNT",myAgentIndex)
         
-        return self.resistanceData
+        return self.resistanceData[myAgentIndex]
