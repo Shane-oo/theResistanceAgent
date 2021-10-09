@@ -288,8 +288,14 @@ class myAgent(Agent):
             # Agent is the only spy
             if(spy_count ==1):
                 return True
+            elif(spy_count>1):
+                # 75 chance of betrayal
+                probability = 0.75
+                return random.random() <= probability
             else:
-                return False
+                # 50% chance of betrayal
+                probability = 0.50
+                return random.random() <= probability
         else:
             if(self.spyWins ==1):
                 spy_count = sum(el in self.spy_list for el in mission)
@@ -307,7 +313,7 @@ class myAgent(Agent):
                     # This situation is difficult since the spies can not communicate
                     # assume spies do a 50/50 
                     probability = 0.5
-                    return random.random() < probability
+                    return random.random() <= probability
             else:
                     # dont care about mission 4 will go for mission 5 win
                     return False
@@ -436,6 +442,8 @@ class myAgent(Agent):
                 self.outedSpies.append(agent)
 
 
+
+    # Helper functions for data collection
     def returnValues(self,agentIndex):
         if(self.is_spy()):
             return (-1,self.spy_list)
@@ -445,3 +453,11 @@ class myAgent(Agent):
         print("WHY CUNT",myAgentIndex)
         
         return self.resistanceData[myAgentIndex]
+    def whoWon(self):
+        
+        if(self.spyWins > self.resistanceWins):
+            return False
+        elif(self.resistanceWins >self.spyWins):
+            return True
+        else:
+            return -1
