@@ -429,23 +429,41 @@ class logicalAgent(Agent):
 
         # spy stupidly outed themself on mission with me
         if(self.player_number in mission):
-            if(len(mission)==2 and betrayals == 1):
-                self.outedSpies.append(agent)
-            if(len(mission)==3 and betrayals ==2 ):
-                self.outedSpies.append(agent)
-            if(len(mission) ==4 and betrayals == 3):
-                self.outedSpies.append(agent)
-            if(len(mission) == 5 and betrayals ==4):
-                self.outedSpies.append(agent)
+
+            for stupidSpies in mission:
+
+                if stupidSpies == self.player_number:
+                    continue
+                if stupidSpies in self.outedSpies:
+                    continue
+                
+                if(len(mission)== 2 and betrayals == 1):
+                    
+                    self.outedSpies.append(stupidSpies)
+                if(len(mission)== 3 and betrayals ==2 ):
+                    
+                    self.outedSpies.append(stupidSpies)
+                if(len(mission) == 4 and betrayals == 3):
+                    
+                    self.outedSpies.append(stupidSpies)
+                if(len(mission) == 5 and betrayals ==4):
+                    
+                    self.outedSpies.append(stupidSpies)
+        # spies outed eachother
         else:
-            if(len(mission) == 2 and betrayals ==2 ):
-                self.outedSpies.append(agent)
-            if(len(mission) == 3 and betrayals ==3 ):
-                self.outedSpies.append(agent)
-            if(len(mission) == 4 and betrayals ==4 ):
-                self.outedSpies.append(agent)
-            if(len(mission) == 5 and betrayals ==5 ):
-                self.outedSpies.append(agent)
+            for stupidSpies in mission:
+                if(len(mission) == 2 and betrayals ==2 ):
+                    
+                    self.outedSpies.append(stupidSpies)
+                if(len(mission) == 3 and betrayals ==3 ):
+                    
+                    self.outedSpies.append(stupidSpies)
+                if(len(mission) == 4 and betrayals ==4 ):
+                    
+                    self.outedSpies.append(stupidSpies)
+                if(len(mission) == 5 and betrayals ==5 ):
+                    
+                    self.outedSpies.append(stupidSpies)
 
 
 

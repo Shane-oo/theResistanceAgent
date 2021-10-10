@@ -25,11 +25,12 @@ for i in range(1):
                         
                 else:
                         spy_list = (agent.returnValues(index)[1])
+
                 if(agent.whoWon()!=-1):
                         whoWonValue = agent.whoWon()
                 
                 index +=1
-
+        print("THE SPYLIST",spy_list)
         if(whoWonValue == True):
                 resistanceWins+=1
         else:
@@ -44,17 +45,18 @@ for i in range(1):
                                 count +=1
                 index+=1        
 
-        i = 0
-        for agents in resistanceData:
+        
+        for  i in range(len(resistanceData)+1):
                 if (i in spy_list):
+                        print("HELLOOO")
                         resistanceData[0][i][10] = 1
-                i+=1
+                
 
         for agents in resistanceData[0]:
                 allData.append(agents)
 
 
-print(allData)
+print("allData",allData)
 print("Resistance Wins Spy Wins Vs Spy Wins",resistanceWins,",",spyWins)
 #print(game)
 
