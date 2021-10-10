@@ -1,5 +1,6 @@
 from random_agent import RandomAgent
 from myAgent22501734 import logicalAgent
+from stupidAgents import StupidAgent
 from game import Game
 allData =[]
 spyWinCount = 0
@@ -8,8 +9,8 @@ for i in range(10000):
         agents = [logicalAgent(name='r1'), 
                 logicalAgent(name='r2'),  
                 logicalAgent(name='r3'),  
-                RandomAgent(name='r4'),  
-                RandomAgent(name='r5'),  ]
+                StupidAgent(name='r4'),  
+                StupidAgent(name='r5'),  ]
         
         game = Game(agents)
         game.play()
