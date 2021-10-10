@@ -53,11 +53,9 @@ for i in range(10000):
                 index+=1        
 
         i = 0
-        for agents in resistanceData:
+        for  i in range(len(resistanceData)+1):
                 if (i in spy_list):
-                        # change spy variable here
                         resistanceData[0][i][10] = 1
-                i+=1
 
         for agents in resistanceData[0]:
                 allData.append(agents)

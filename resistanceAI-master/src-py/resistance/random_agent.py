@@ -36,7 +36,6 @@ class RandomAgent(Agent):
        
         team = []
         while len(team)<team_size:
-            
             agent = random.randrange(team_size)
             if agent not in team:
                 team.append(agent)
@@ -71,7 +70,7 @@ class RandomAgent(Agent):
         By default, spies will betray 30% of the time. 
         '''
         if self.is_spy():
-            return random.random()<0.3
+            return random.random()<0.5
 
     def mission_outcome(self, mission, proposer, betrayals, mission_success):
         '''
