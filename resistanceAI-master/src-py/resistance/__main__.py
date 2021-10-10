@@ -4,7 +4,7 @@ from game import Game
 allData =[]
 resistanceWins = 0
 spyWins = 0
-for i in range(1):
+for i in range(100):
         agents = [logicalAgent(name='r1'), 
                 logicalAgent(name='r2'),  
                 logicalAgent(name='r3'),  
@@ -48,7 +48,6 @@ for i in range(1):
         
         for  i in range(len(resistanceData)+1):
                 if (i in spy_list):
-                        print("HELLOOO")
                         resistanceData[0][i][10] = 1
                 
 
