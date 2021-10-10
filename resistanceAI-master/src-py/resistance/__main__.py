@@ -1,13 +1,15 @@
 from random_agent import RandomAgent
-from myAgent22501734 import myAgent
+from myAgent22501734 import logicalAgent
 from game import Game
 allData =[]
-for i in range(100):
-        agents = [myAgent(name='r1'), 
-                myAgent(name='r2'),  
-                myAgent(name='r3'),  
-                myAgent(name='r4'),  
-                myAgent(name='r5'),  
+resistanceWins = 0
+spyWins = 0
+for i in range(500):
+        agents = [logicalAgent(name='r1'), 
+                logicalAgent(name='r2'),  
+                logicalAgent(name='r3'),  
+                logicalAgent(name='r4'),  
+                logicalAgent(name='r5'),  
                 ]
         
         game = Game(agents)
@@ -28,7 +30,10 @@ for i in range(100):
                 
                 index +=1
 
-        
+        if(whoWonValue == True):
+                resistanceWins+=1
+        else:
+                spyWins+=1
         index = 0
         for findNoData in resistanceData[0]:
                 if findNoData[0] == 'MyAgent':
@@ -42,7 +47,7 @@ for i in range(100):
         i = 0
         for agents in resistanceData:
                 if (i in spy_list):
-                        resistanceData[0][i][5] = 1
+                        resistanceData[0][i][10] = 1
                 i+=1
 
         for agents in resistanceData[0]:
@@ -50,6 +55,7 @@ for i in range(100):
 
 
 print(allData)
+print("Resistance Wins Spy Wins Vs Spy Wins",resistanceWins,",",spyWins)
 #print(game)
 
 
