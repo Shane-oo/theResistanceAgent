@@ -447,7 +447,7 @@ class myAgent(Agent):
         else:
             return (1,self.resistanceData)
     def returnMyAgentInfo(self,myAgentIndex):
-        print("WHY CUNT",myAgentIndex)
+        
         
         return self.resistanceData[myAgentIndex]
     def whoWon(self):

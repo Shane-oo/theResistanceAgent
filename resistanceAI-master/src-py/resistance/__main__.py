@@ -8,11 +8,6 @@ for i in range(100):
                 myAgent(name='r3'),  
                 myAgent(name='r4'),  
                 myAgent(name='r5'),  
-                myAgent(name='r6'),  
-                myAgent(name='r7'),
-                myAgent(name='r8'),
-                myAgent(name='r9'),
-                myAgent(name='r10'),
                 ]
         
         game = Game(agents)
