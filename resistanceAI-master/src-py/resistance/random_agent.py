@@ -105,3 +105,9 @@ class RandomAgent(Agent):
 
 
 
+         # Helper functions for data collection
+    def returnValues(self,agentIndex):
+        if(self.is_spy()):
+            return (-1,self.spy_list)
+        else:
+            return (1,-1)

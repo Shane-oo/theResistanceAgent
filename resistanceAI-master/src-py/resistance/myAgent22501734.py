@@ -4,16 +4,26 @@ import random
 
 # Global variables
 #indexs of varibales in dataset
+# Variables after missions
 VOTED_FOR_FAILED_MISSION = 0#
 WENT_ON_FAILED_MISSION = 1#
 PROP_TEAM_FAILED_MISSION = 2#
 REJECTED_TEAM_SUCCESFUL_MISSION = 3 #
+
+# Voting variables
 VOTED_AGAINST_TEAM_PROPOSAL = 4
-IS_SPY = 5
+VOTED_NO_TEAM_HAS_SUCCESSFUL_MEMBERS = 5
+VOTED_FOR_TEAM_HAS_UNSUCCESSFUL_MEMBERS = 6
+VOTED_FOR_MISION_NOT_ON = 7
+
+#Proposed team variables
+PROPOSED_TEAM_HAS_UNSUCCESSFUL_MEMBERS = 8
+PROPOSED_TEAM_THAT_HAVENT_BEEN_ON_MISSIONS = 9
+
+IS_SPY = 10
 
 # Logical playing Agent
-
-class myAgent(Agent):        
+class logicalAgent(Agent):        
 
 
     '''My agent in the game The Resistance'''
@@ -58,7 +68,7 @@ class myAgent(Agent):
                 if i == player_number:
                     resistanceTable.append(["MyAgent"])
                 else:
-                    resistanceTable.append([0,0,0,0,0,0])
+                    resistanceTable.append([0,0,0,0,0,0,0,0,0,0,0])
                     
             self.resistanceData = resistanceTable
 
@@ -209,8 +219,12 @@ class myAgent(Agent):
             if(trustedAgentsCount == len(mission)):
                 return True
             failedAgentsCount = sum(el in self.wentOnFailedMissions for el in mission)
+
             if(failedAgentsCount >0):
+               
                 return False
+
+                
             # If there are some trust worthy members and members yet to be on mission return True
             if(trustedAgentsCount>0 and failedAgentsCount ==0):
                 return True
@@ -238,36 +252,37 @@ class myAgent(Agent):
         it just a list of positive voters"
         '''
         if(not self.is_spy()):
-            # If agent was asked on mission and declined it is very suss
-            # extra sussness if multiple mission members vote no
-            missionMembersDeclining = 0
-            for agents in mission:
-                if agents not in votes:
-                    missionMembersDeclining +=1
-            for agents in mission:
-                if agents not in votes:
-                    if agents == self.player_number:
-                        continue
-                    self.resistanceData[agents][VOTED_AGAINST_TEAM_PROPOSAL] += missionMembersDeclining
+            if(proposer != self.player_number):
+                # if proposer proposed a mission that contains no succesful mission members
+                if(len(self.wentOnSuccessfulMissions)!=0):
+                    trustingMembersCount = sum(el in self.wentOnSuccessfulMissions for el in mission)
+                    if(trustingMembersCount == 0):
+                        self.resistanceData[proposer][PROPOSED_TEAM_THAT_HAVENT_BEEN_ON_MISSIONS] += 2*(self.missionNum)
+                # if proposer proposed a mission that contains failed mission members
+                if(len(self.wentOnFailedMissions)!=0):
+                    unTrustingMembersCount = sum(el in self.wentOnFailedMissions for el in mission)
+                    if(unTrustingMembersCount != 0):
+                        self.resistanceData[proposer][PROPOSED_TEAM_HAS_UNSUCCESSFUL_MEMBERS] += 4*(self.missionNum*unTrustingMembersCount)
+                        
             
             for i in range(self.number_of_players):
                 # if agent votes no for mission its suss
                 if i == self.player_number:
                         continue
                 if i not in votes:
-                    self.resistanceData[i][VOTED_AGAINST_TEAM_PROPOSAL] += self.number_of_players/(self.number_of_players-len(votes))
+                    self.resistanceData[i][VOTED_AGAINST_TEAM_PROPOSAL] += self.missionNum
                     # If they say not to teams that contatin successful mission members its suss
                     SuccessfulMissionsMembers = sum(el in self.wentOnSuccessfulMissions for el in mission)
-                    self.resistanceData[i][VOTED_AGAINST_TEAM_PROPOSAL] += SuccessfulMissionsMembers
+                    self.resistanceData[i][VOTED_NO_TEAM_HAS_SUCCESSFUL_MEMBERS] += 3*(self.missionNum*SuccessfulMissionsMembers)
 
                 if i in votes:
                     # If they vote yes for a mission that contains members that prevousily failed missions its suss
                     failedPriorMissionsMembers = sum(el in self.wentOnFailedMissions for el in mission)
-                    self.resistanceData[i][VOTED_AGAINST_TEAM_PROPOSAL] += failedPriorMissionsMembers
+                    self.resistanceData[i][VOTED_FOR_TEAM_HAS_UNSUCCESSFUL_MEMBERS ] += 4*(self.missionNum*failedPriorMissionsMembers)
                 
                 if (i in votes and i not in mission):
                     # voted for a mission they are not on
-                    self.resistanceData[i][VOTED_AGAINST_TEAM_PROPOSAL] += 1
+                    self.resistanceData[i][VOTED_FOR_MISION_NOT_ON] += self.missionNum
         pass
 
     def betray(self, mission, proposer):
@@ -337,21 +352,20 @@ class myAgent(Agent):
                     self.wentOnSuccessfulMissions.append(agents)
                 for i in range(self.number_of_players):
     
-                    if i not in self.agentsWhoVoted and i is not self.player_number:
+                    if i not in self.agentsWhoVoted:
+                        if(i ==self.player_number):
+                            continue
                         # Increases sussness if agent did not want a successful mission to happen
-                        amountThatVotedAgainst = self.number_of_players-len(self.agentsWhoVoted)
-                        self.resistanceData[i][REJECTED_TEAM_SUCCESFUL_MISSION] += amountThatVotedAgainst/self.number_of_players
+                        self.resistanceData[i][REJECTED_TEAM_SUCCESFUL_MISSION] += 2*(self.missionNum)
                 
             # failed mission
             else:
                 self.spyWins += 1
-                
                 for agent in self.agentsWhoVoted:
                     if(agent is not self.player_number):
                         # Increase sussness if agent most liekly voted knowing mission would fail
-                        self.resistanceData[agent][VOTED_FOR_FAILED_MISSION]+= len(self.agentsWhoVoted)/self.number_of_players
+                        self.resistanceData[agent][VOTED_FOR_FAILED_MISSION]+= 2*(self.missionNum)
                 # Increment the amounts that add to untrustworthyness
-            
                 if(proposer is not self.player_number):
 
                     self.propFailedMissions.append(proposer)
@@ -359,15 +373,14 @@ class myAgent(Agent):
                     if(propFailedMissionsCount == 0):
                         propFailedMissionsCount = 1
                     # increment by one or by how many times agent has proposed failed mission    
-                    self.resistanceData[proposer][PROP_TEAM_FAILED_MISSION] += propFailedMissionsCount
+                    self.resistanceData[proposer][PROP_TEAM_FAILED_MISSION] += 3*propFailedMissionsCount*self.missionNum
+                    # If proposer was in the mission that failed
                     if(proposer in mission):
-                        self.resistanceData[proposer][PROP_TEAM_FAILED_MISSION] += (betrayals)/len(mission)
+                        self.resistanceData[proposer][PROP_TEAM_FAILED_MISSION] += 3*self.missionNum
 
                 for agent in mission:
                     # check for outed spies
-                    
                     self.stupid_spies_check(agent,proposer,mission,betrayals)
-
                     if(agent is not self.player_number):
                         self.wentOnFailedMissions.append(agent)
                         # remove agents from wentOnSuccessfulMissions if exist in wentOnFailedMissions
@@ -378,14 +391,9 @@ class myAgent(Agent):
                         failedMissionsCount = self.failedMissions.count(agent)
                         if(failedMissionsCount == 0):
                             failedMissionsCount = 1
-                        if(self.player_number in mission):
-                            sussMembers = len(mission) - 1
-                        else:
-                            sussMembers = len(mission)
+                        self.resistanceData[agent][WENT_ON_FAILED_MISSION] += failedMissionsCount*self.missionNum*(betrayals/len(mission))
 
-                        self.resistanceData[agent][WENT_ON_FAILED_MISSION] += failedMissionsCount*(betrayals/sussMembers)
-
-        print(self.resistanceData)
+        
         print("Outed spies",self.outedSpies)
         #nothing to do here
 
@@ -447,7 +455,7 @@ class myAgent(Agent):
         else:
             return (1,self.resistanceData)
     def returnMyAgentInfo(self,myAgentIndex):
-        print("WHY CUNT",myAgentIndex)
+        
         
         return self.resistanceData[myAgentIndex]
     def whoWon(self):
