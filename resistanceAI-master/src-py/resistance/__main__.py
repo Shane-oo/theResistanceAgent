@@ -5,7 +5,7 @@ from game import Game
 allData =[]
 spyWinCount = 0
 resitanceWinCount=0
-for i in range(10000):
+for i in range(1000):
         agents = [logicalAgent(name='r1'), 
                 logicalAgent(name='r2'),  
                 logicalAgent(name='r3'),  
