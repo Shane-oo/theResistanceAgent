@@ -315,7 +315,7 @@ class logicalAgent(Agent):
                 if (i in votes and i not in mission):
                     # voted for a mission they are not on
                     self.resistanceData[i][VOTED_FOR_MISION_NOT_ON] += self.missionNum
-            if(self.spyWins >= 2):
+            if(self.spyWins >= 2 or self.missionNum>=3):
                 self.predictedSpies = naiveBayesClassifier(self.resistanceData)
                 print("2 ",self.predictedSpies)
         pass
@@ -432,7 +432,7 @@ class logicalAgent(Agent):
 
             # Bayes Classifier 
             # Gather what the predicted spies could be (For effiency Im only going get predicted spies when spyWins ==2)
-            if(self.spyWins >= 2):
+            if(self.spyWins >= 2 or self.missionNum>=3):
                 self.predictedSpies = naiveBayesClassifier(self.resistanceData)
                 print("3 ",self.predictedSpies)
             #naiveBayesClassifier(self.resistanceData)
