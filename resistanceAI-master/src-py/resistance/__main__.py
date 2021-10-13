@@ -4,12 +4,17 @@ from game import Game
 allData =[]
 resistanceWins = 0
 spyWins = 0
-for i in range(500):
+for i in range(200):
         agents = [logicalAgent(name='r1'), 
                 logicalAgent(name='r2'),  
                 logicalAgent(name='r3'),  
                 logicalAgent(name='r4'),  
                 logicalAgent(name='r5'),  
+                 logicalAgent(name='r6'),  
+                  logicalAgent(name='r7'),  
+                   logicalAgent(name='r8'),  
+                    logicalAgent(name='r9'),  
+                     logicalAgent(name='r10'),  
                 ]
         
         game = Game(agents)
