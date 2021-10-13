@@ -128,7 +128,17 @@ class logicalAgent(Agent):
                                         team.append(i)
                                 else:
                                     team.append(i)
-                                
+                        
+
+                    
+                    # pick the members not predicted to be spies
+                    for i in range(self.number_of_players):
+                        if len(team)<team_size:
+                            if i not in team:
+                                if(len(self.predictedSpies)!=0):
+                                    if(self.predictedSpies[i]!=1):
+                                        team.append(i)
+
                     # last resort is to pick from random potentially picking member that potentially went on failed mission
                     # but do not pick any agents that have been found to be spies
                     while len(team)<team_size:
@@ -136,12 +146,9 @@ class logicalAgent(Agent):
                         print("stuck")
                         print("the team",team,"the agent",agent,"the outed spies",self.outedSpies,"the predicted spies",self.predictedSpies)
                         if agent not in team and agent not in self.outedSpies:
-                            if(len(self.predictedSpies)!=0):
-                                
-                                if(self.predictedSpies[agent]!=1):
-                                    team.append(agent)
-                            else:
-                                team.append(agent)
+                            continue
+                        else:
+                            team.append(agent)
 
         ##################### Spy Moves ###############################
         else:
