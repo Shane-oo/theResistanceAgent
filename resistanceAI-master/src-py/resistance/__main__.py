@@ -4,7 +4,7 @@ from game import Game
 allData =[]
 resistanceWins = 0
 spyWins = 0
-for i in range(200):
+for i in range(500):
         agents = [logicalAgent(name='r1'), 
                 logicalAgent(name='r2'),  
                 logicalAgent(name='r3'),  
@@ -37,6 +37,7 @@ for i in range(200):
 
         if(whoWonValue == True):
                 resistanceWins+=1
+                continue
         else:
                 spyWins+=1
         index = 0
