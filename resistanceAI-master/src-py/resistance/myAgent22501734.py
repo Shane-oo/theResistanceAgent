@@ -132,11 +132,12 @@ class logicalAgent(Agent):
 
                     
                     # pick the members not predicted to be spies
+                    # And not the outed spies
                     for i in range(self.number_of_players):
                         if len(team)<team_size:
                             if i not in team:
                                 if(len(self.predictedSpies)!=0):
-                                    if(self.predictedSpies[i]!=1):
+                                    if(self.predictedSpies[i]!=1 and i not in self.outedSpies):
                                         team.append(i)
 
                     # last resort is to pick from random potentially picking member that potentially went on failed mission
