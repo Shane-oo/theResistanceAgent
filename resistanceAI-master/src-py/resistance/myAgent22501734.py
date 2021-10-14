@@ -466,3 +466,5 @@ class logicalAgent(Agent):
             return True
         else:
             return -1
+
+
