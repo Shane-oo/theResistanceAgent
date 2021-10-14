@@ -733,6 +733,7 @@ trainingDataLogicalSpy = [[20, 1.5, 0, 0, 0, 0, 84, 11, 0, 0, 1], [20, 3.9999999
 class logicalAgentNoBayes(Agent): 
 
 
+
     '''My agent in the game The Resistance'''
     def __init__(self, name='Rando'):
         '''
@@ -753,7 +754,6 @@ class logicalAgentNoBayes(Agent):
         self.wentOnSuccessfulMissions = []
         self.wentOnFailedMissions = []
         self.outedSpies = []
-        
 
         
         
@@ -814,33 +814,24 @@ class logicalAgentNoBayes(Agent):
                 for trustingAgents in self.wentOnSuccessfulMissions:
                     if(len(team)<team_size):
                         agent = random.choice(self.wentOnSuccessfulMissions)
-                        if agent not in team and agent not in self.outedSpies :
-                           team.append(agent)
-    
-                            
+                        if agent not in team and agent not in self.outedSpies:
+                            team.append(agent)
                 # if still need team members
                 if(len(team)<team_size):
                     # pick members that have not failed any missions yet
                     for i in range(self.number_of_players):
                         if((len(team)<team_size) and i not in self.wentOnFailedMissions):
                             if i not in team and i not in self.outedSpies:
-  
                                 team.append(i)
-                        
-
-
                     # last resort is to pick from random potentially picking member that potentially went on failed mission
                     # but do not pick any agents that have been found to be spies
                     while len(team)<team_size:
                         agent = random.randrange(self.number_of_players)
                         if agent not in team and agent not in self.outedSpies:
-                            continue
-                        else:
                             team.append(agent)
-
         ##################### Spy Moves ###############################
         else:
-            if(self.missionNum !=4):
+            if( self.missionNum !=4):
                 team.append(self.player_number)
                 # put self on team with only other reistance members
                 while len(team)<team_size:
@@ -854,9 +845,12 @@ class logicalAgentNoBayes(Agent):
                    
                     # add just 1 more spy to team spy to team
                     if(betrayals_required == 2):
+                        
                         while len(team)<team_size:
+                            
                             spy_count = sum(el in self.spy_list for el in mission)
                             if(spy_count==1):
+                                
                                 agent = random.choice(self.spy_list)
                             else:
                                 
@@ -868,10 +862,10 @@ class logicalAgentNoBayes(Agent):
                 # mission 4 but dont need to win mission 4 or need to win mission 4 but only need 1 betrayal
                 while len(team)<team_size:
                         
-                    agent = random.randrange(self.number_of_players)
-                    if ((agent not in team) and agent not in self.spy_list):
+                        agent = random.randrange(self.number_of_players)
+                        if (agent not in team and agent not in self.spy_list):
                         
-                        team.append(agent)
+                            team.append(agent)
                 
         return team        
 
@@ -910,9 +904,6 @@ class logicalAgentNoBayes(Agent):
                     if(self.number_of_players>=7 and spy_count<2):
                         # need a mission with more than 2 spies
                         return False
-                    elif(self.number_of_players>=7 and spy_count>1):
-                        # mission has more than 2 spies like it needs
-                        return True
                     elif(self.number_of_players<7 and spy_count ==1):
                         return True
                     else:
@@ -927,17 +918,15 @@ class logicalAgentNoBayes(Agent):
             if(self.roundCount == 5):
                 return True
             if(self.missionNum ==1 ):
+                # SHANE IT MIGHT BE THIS RETURN FALSE IF NOT ON TEAM RETURN TRUE IF ON TEAM
                 # no info to go off of for mission 1
                 if(self.player_number in mission):
                     return True
                 else:
                     return False
             outedSpiesCount = sum(el in self.outedSpies for el in mission)
-            
             if(outedSpiesCount!=0):
                 return False
-
-
             trustedAgentsCount = sum(el in self.wentOnSuccessfulMissions for el in mission)
             # All trustworthy members on team
             if(trustedAgentsCount == len(mission)):
@@ -1021,18 +1010,18 @@ class logicalAgentNoBayes(Agent):
             return False
         elif(self.missionNum == 5):
             return True
-        elif(self.missionNum !=4):
+
+        elif( self.missionNum !=4):
             spy_count = sum(el in self.spy_list for el in mission)
             # Agent is the only spy
             if(spy_count ==1):
                 return True
+                #SHANE IT COULD BE THIS
             elif(spy_count>1 and spy_count<3):
-                # two spies on team
                 # 75 chance of betrayal
                 probability = 0.75
                 return random.random() <= probability
             else:
-                # more than two spies on team
                 # 50% chance of betrayal
                 probability = 0.50
                 return random.random() <= probability
@@ -1085,7 +1074,7 @@ class logicalAgentNoBayes(Agent):
                             continue
                         # Increases sussness if agent did not want a successful mission to happen
                         self.resistanceData[i][REJECTED_TEAM_SUCCESFUL_MISSION] += 2*(self.missionNum)
-           
+                
             # failed mission
             else:
                 self.spyWins += 1
@@ -1120,7 +1109,11 @@ class logicalAgentNoBayes(Agent):
                         if(failedMissionsCount == 0):
                             failedMissionsCount = 1
                         self.resistanceData[agent][WENT_ON_FAILED_MISSION] += failedMissionsCount*self.missionNum*(betrayals/len(mission))
+
         
+        print("Outed spies",self.outedSpies)
+        #nothing to do here
+
         self.missionNum +=1
         pass
 

@@ -5,16 +5,16 @@ allData =[]
 resistanceWins = 0
 spyWins = 0
 for i in range(200):
-        agents = [logicalAgent(name='r1'), 
-                logicalAgent(name='r2'),  
-                logicalAgent(name='r3'),  
-                logicalAgent(name='r4'),  
-                logicalAgent(name='r5'),  
-                 logicalAgent(name='r6'),  
-                  logicalAgent(name='r7'),  
-                   logicalAgent(name='r8'),  
-                    logicalAgent(name='r9'),  
-                     logicalAgent(name='r10'),  
+        agents = [logicalAgentNoBayes(name='r1'), 
+                logicalAgentNoBayes(name='r2'),  
+                logicalAgentNoBayes(name='r3'),  
+               logicalAgentNoBayes(name='r4'),  
+               logicalAgentNoBayes(name='r5'),  
+                 logicalAgentNoBayes(name='r6'),  
+                  logicalAgentNoBayes(name='r7'),  
+                   logicalAgentNoBayes(name='r8'),  
+                  logicalAgentNoBayes(name='r9'),  
+                   logicalAgentNoBayes(name='r10'),  
                 ]
         
         game = Game(agents)
