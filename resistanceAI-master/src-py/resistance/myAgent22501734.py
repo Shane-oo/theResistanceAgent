@@ -147,9 +147,10 @@ class logicalAgent(Agent):
                         print("stuck")
                         print("the team",team,"the agent",agent,"the outed spies",self.outedSpies,"the predicted spies",self.predictedSpies)
                         if agent not in team and agent not in self.outedSpies:
-                            continue
-                        else:
-                            team.append(agent)
+                           # continue
+                           team.append(agent)
+                        #else:
+                          #  team.append(agent)
 
         ##################### Spy Moves ###############################
         else:
