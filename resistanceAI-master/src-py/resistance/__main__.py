@@ -4,13 +4,17 @@ from game import Game
 allData =[]
 resistanceWins = 0
 spyWins = 0
-for i in range(1000):
-        agents = [logicalAgentNoBayes(name='r1'), 
-                logicalAgentNoBayes(name='r2'),  
-                logicalAgentNoBayes(name='r3'),  
-                logicalAgentNoBayes(name='r4'),  
-                logicalAgentNoBayes(name='r5'),  
-  
+for i in range(200):
+        agents = [logicalAgent(name='r1'), 
+                logicalAgent(name='r2'),  
+                logicalAgent(name='r3'),  
+                logicalAgent(name='r4'),  
+                logicalAgent(name='r5'),  
+                 logicalAgent(name='r6'),  
+                  logicalAgent(name='r7'),  
+                   logicalAgent(name='r8'),  
+                    logicalAgent(name='r9'),  
+                     logicalAgent(name='r10'),  
                 ]
         
         game = Game(agents)
@@ -26,14 +30,14 @@ for i in range(1000):
                         
                 else:
                         spy_list = (agent.returnValues(index)[1])
-
                 if(agent.whoWon()!=-1):
                         whoWonValue = agent.whoWon()
                 
                 index +=1
-        print("THE SPYLIST",spy_list)
+
         if(whoWonValue == True):
                 resistanceWins+=1
+                
         else:
                 spyWins+=1
         index = 0
@@ -46,17 +50,17 @@ for i in range(1000):
                                 count +=1
                 index+=1        
 
-        
-        for  i in range(len(resistanceData)+1):
+        i = 0
+        for agents in resistanceData:
                 if (i in spy_list):
                         resistanceData[0][i][10] = 1
-                
+                i+=1
 
         for agents in resistanceData[0]:
                 allData.append(agents)
 
 
-print("allData",allData)
+print(allData)
 print("Resistance Wins Spy Wins Vs Spy Wins",resistanceWins,",",spyWins)
 #print(game)
 
