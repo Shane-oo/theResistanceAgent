@@ -39,7 +39,6 @@ for i in range(200):
                 resistanceWins+=1
                 
         else:
-                continue
                 spyWins+=1
         index = 0
         for findNoData in resistanceData[0]:
