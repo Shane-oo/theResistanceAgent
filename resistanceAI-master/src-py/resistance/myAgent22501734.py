@@ -153,14 +153,14 @@ class logicalAgent(Agent):
 
         ##################### Spy Moves ###############################
         else:
-            if(self.missionNum ==1 and self.missionNum !=4):
+            if(self.missionNum !=4):
                 team.append(self.player_number)
                 # put self on team with only other reistance members
                 while len(team)<team_size:
                     agent = random.randrange(self.number_of_players)
                     if ((agent not in team) and agent not in self.spy_list):
                         team.append(agent)
-            else:# mission 4
+            else:
                 team.append(self.player_number)
                 # need to win mission 4 and 5 to win game
                 if(self.spyWins == 1):
@@ -178,13 +178,13 @@ class logicalAgent(Agent):
                                 
                                 team.append(agent)
                     
-                else:
-                    while len(team)<team_size:
+                # mission 4 but dont need to win mission 4 or need to win mission 4 but only need 1 betrayal
+                while len(team)<team_size:
                         
-                        agent = random.randrange(self.number_of_players)
-                        if ((agent not in team) and agent not in self.spy_list):
+                    agent = random.randrange(self.number_of_players)
+                    if ((agent not in team) and agent not in self.spy_list):
                         
-                            team.append(agent)
+                        team.append(agent)
                 
         return team        
 
@@ -223,6 +223,9 @@ class logicalAgent(Agent):
                     if(self.number_of_players>=7 and spy_count<2):
                         # need a mission with more than 2 spies
                         return False
+                    elif(self.number_of_players>=7 and spy_count>1):
+                        # mission has more than 2 spies like it needs
+                        return True
                     elif(self.number_of_players<7 and spy_count ==1):
                         return True
                     else:
@@ -232,12 +235,16 @@ class logicalAgent(Agent):
                     # dont care about mission 4 will go for mission 5 win
                     return True
         else:
-            if(self.missionNum ==1 ):
-                # no info to go off of for mission 1
-                return True
+            
             # should vote yes if in last round to avoid a mission fail     
             if(self.roundCount == 5):
                 return True
+            if(self.missionNum ==1 ):
+                # no info to go off of for mission 1
+                if(self.player_number in mission):
+                    return True
+                else:
+                    return False
             outedSpiesCount = sum(el in self.outedSpies for el in mission)
             
             if(outedSpiesCount!=0):
@@ -340,16 +347,18 @@ class logicalAgent(Agent):
             return False
         elif(self.missionNum == 5):
             return True
-        elif(self.missionNum != 1 and self.missionNum !=4):
+        elif(self.missionNum !=4):
             spy_count = sum(el in self.spy_list for el in mission)
             # Agent is the only spy
             if(spy_count ==1):
                 return True
-            elif(spy_count>1):
+            elif(spy_count>1 and spy_count<3):
+                # two spies on team
                 # 75 chance of betrayal
                 probability = 0.75
                 return random.random() <= probability
             else:
+                # more than two spies on team
                 # 50% chance of betrayal
                 probability = 0.50
                 return random.random() <= probability
@@ -575,7 +584,7 @@ def naiveBayesClassifier(resistanceData):
         if(row[0] == "MyAgent"):
             spyPredictions.append("MyAgent")
         else:
-            # dont need IS_SPY()
+           
             print(row[:IS_SPY])
             spyPredictions.append(predict(model,row[:IS_SPY]))
     
