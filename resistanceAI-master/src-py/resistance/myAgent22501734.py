@@ -36,6 +36,7 @@ class bayesAgent(Agent):
         self.resistanceWins = 0
         self.roundCount = 1
 
+
         
        #Resistance Agent variables
         self.resistanceData = []
@@ -45,6 +46,10 @@ class bayesAgent(Agent):
         self.wentOnFailedMissions = []
         self.outedSpies = []
         self.predictedSpies = []
+
+        # helper array for accuracy
+
+        self.allPredictions = []
 
         
         
@@ -88,7 +93,6 @@ class bayesAgent(Agent):
         '''
         returns True iff the agent is a spy
         '''
-        print("Spy list",self.spy_list)
         return self.player_number in self.spy_list
     
 
@@ -351,6 +355,10 @@ class bayesAgent(Agent):
             # Run predictions after significant data is added
             if(self.spyWins > 1 or self.missionNum>2 or self.roundCount ==4 ):
                 self.predictedSpies = naiveBayesClassifier(self.resistanceData)
+                self.allPredictions.append(self.predictedSpies)
+            else:
+                self.allPredictions.append([0])
+
         pass
 
     def betray(self, mission, proposer):
@@ -458,9 +466,12 @@ class bayesAgent(Agent):
                         if(failedMissionsCount == 0):
                             failedMissionsCount = 1
                         self.resistanceData[agent][WENT_ON_FAILED_MISSION] += failedMissionsCount*self.missionNum*(betrayals/len(mission))
-            if(self.spyWins > 1 or self.missionNum>2 ):
+            if((self.spyWins > 1 or self.missionNum>2) and self.missionNum!=5):
             # Run predictions after significant data is added
                 self.predictedSpies = naiveBayesClassifier(self.resistanceData)
+                self.allPredictions.append(self.predictedSpies)
+            else:
+                self.allPredictions.append([0])
         
         print("Outed spies",self.outedSpies)
         print("predicted spies after mission",self.predictedSpies)
@@ -535,7 +546,7 @@ class bayesAgent(Agent):
         if(self.is_spy()):
             return (-1,self.spy_list)
         else:
-            return (1,self.resistanceData)
+            return (1,self.resistanceData,self.allPredictions)
     def returnMyAgentInfo(self,myAgentIndex):
         return self.resistanceData[myAgentIndex]
     def whoWon(self):
@@ -545,6 +556,7 @@ class bayesAgent(Agent):
             return True
         else:
             return -1
+
     
 
 
@@ -604,19 +616,19 @@ def predict(summaries,row):
     probabilities = calculate_class_probabilities(summaries, row)
     best_label, best_prob = None,-1
     for class_value,probability in probabilities.items():
-        if best_label is None or probability> best_prob:
+        if best_label is None or probability > best_prob:
             best_prob = probability
             best_label = class_value
     return best_label
 
-
+ALPHA_LAPLACE_SMOOTHING = 1
 def calculate_class_probabilities(summaries, row):
     total_rows = sum([summaries[label][0][2] for label in summaries])
     
     probabilities = dict()
     
     for class_value, class_summaries in summaries.items():
-        probabilities[class_value] = summaries[class_value][0][2]/float(total_rows)
+        probabilities[class_value] = summaries[class_value][0][2]+ALPHA_LAPLACE_SMOOTHING/float(total_rows)
        
         for i in range(len(class_summaries)):
             
