@@ -1,16 +1,22 @@
 from random_agent import RandomAgent
-from myAgent22501734 import logicalAgent
+from myAgent22501734 import bayesAgent
 from generalAgent import generalAgent
 from game import Game
 allData =[]
 resistanceWins = 0
 spyWins = 0
-for i in range(1):
-        agents = [generalAgent(name='r1'), 
-                generalAgent(name='r2'),  
-                generalAgent(name='r3'),  
-                generalAgent(name='r4'),  
-                generalAgent(name='r5')
+for i in range(100):
+        agents = [bayesAgent(name='r1'), 
+                bayesAgent(name='r2'), 
+                bayesAgent(name='r3'), 
+                bayesAgent(name='r4'), 
+                bayesAgent(name='r5'),
+                bayesAgent(name='r6'),
+                bayesAgent(name='r7'),
+                bayesAgent(name='r8'),
+                bayesAgent(name='r9'),
+                bayesAgent(name='r10')
+ 
                 ]
         
         game = Game(agents)
@@ -57,7 +63,8 @@ for i in range(1):
 
 
 
-print(game)
+#print(game)
 print("allData",allData)
-print("Resistance Wins Spy Wins Vs Spy Wins",resistanceWins,",",spyWins)
+print("Resistance Wins  Vs Spy Wins")
+print(resistanceWins,"Vs",spyWins)
 
