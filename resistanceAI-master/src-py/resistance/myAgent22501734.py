@@ -557,29 +557,7 @@ from math import sqrt
 from math import exp
 from math import pi
 
-#Checking if the predicted spies is okay to go off of
-# An invalid spyPrediction would be one that says everyone is a spy i.e ['MyAgent',1,1,1,1] 
-def checkValidPrediction(spyPredictions,resistanceData):
-    
-    SpyCount = 0
-    for value in spyPredictions:
-        if value == 1:
-            SpyCount+=1
-    if(len(resistanceData)==5 and SpyCount>2):
-        return -1
-    elif(len(resistanceData)==6 and SpyCount>2):
-        return -1
-    elif(len(resistanceData)==7 and SpyCount>3):
-        return -1
-    elif(len(resistanceData)==8 and SpyCount>3):
-        return -1
-    elif(len(resistanceData)==9 and SpyCount>3):
-        return -1
-    elif(len(resistanceData)==10 and SpyCount>4):
-        return -1
-    else:
-        # all goods
-        return 1
+
 def naiveBayesClassifier(resistanceData):
     print(len(trainingDataLogicalSpy))
     model = summarise_by_class(trainingDataLogicalSpy)
@@ -593,8 +571,6 @@ def naiveBayesClassifier(resistanceData):
             spyPredictions.append(predict(model,row[:IS_SPY]))
     
     print("SPY PREDICTIONS =",spyPredictions)
-    if(checkValidPrediction(spyPredictions,resistanceData) !=1):
-        spyPredictions = []
     return spyPredictions
     
 

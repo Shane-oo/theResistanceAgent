@@ -5,7 +5,7 @@ from game import Game
 allData =[]
 resistanceWins = 0
 spyWins = 0
-for i in range(100):
+for i in range(1):
         agents = [bayesAgent(name='r1'), 
                 bayesAgent(name='r2'), 
                 bayesAgent(name='r3'), 
