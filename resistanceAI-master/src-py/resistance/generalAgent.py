@@ -24,13 +24,10 @@ IS_SPY = 10
 
 class generalAgent(Agent): 
 
-
-
     '''My agent in the game The Resistance'''
     def __init__(self, name='Rando'):
         '''
         Initialises the agent.
-        Nothing to do here.
         '''
         #initialise class attributes
         self.name = name
