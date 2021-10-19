@@ -1,20 +1,20 @@
 from random_agent import RandomAgent
-from myAgent22501734 import logicalAgent
+from myAgent22501734 import bayesAgent
 from game import Game
 allData =[]
 spyWinCount = 0
 resitanceWinCount=0
 for i in range(15000):
-        agents = [logicalAgent(name='r1'), 
-                logicalAgent(name='r2'),  
-                logicalAgent(name='r3'),  
-                logicalAgent(name='r4'),  
-                logicalAgent(name='r5'),  
-                logicalAgent(name='r6'),  
+        agents = [bayesAgent(name='r1'), 
+                bayesAgent(name='r2'),  
+                bayesAgent(name='r3'),  
+                bayesAgent(name='r4'),  
+                bayesAgent(name='r5'),  
+                bayesAgent(name='r6'),  
                 RandomAgent(name='r7'),  
                 RandomAgent(name='r8'),  
                 RandomAgent(name='r9'),  
-                RandomAgent(name='r10'),  ]
+                RandomAgent(name='r10')  ]
         
         game = Game(agents)
         game.play()
