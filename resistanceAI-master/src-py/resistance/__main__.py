@@ -1,20 +1,16 @@
 from random_agent import RandomAgent
-from myAgent22501734 import logicalAgent,logicalAgentNoBayes
+from myAgent22501734 import logicalAgent
+from generalAgent import generalAgent
 from game import Game
 allData =[]
 resistanceWins = 0
 spyWins = 0
 for i in range(1):
-        agents = [logicalAgent(name='r1'), 
-                logicalAgent(name='r2'),  
-                logicalAgent(name='r3'),  
-                logicalAgent(name='r4'),  
-                logicalAgent(name='r5'),  
-                logicalAgent(name='r6'),  
-                logicalAgent(name='r7'),  
-                logicalAgent(name='r8'),  
-                logicalAgent(name='r9'),  
-                logicalAgent(name='r10'),  
+        agents = [generalAgent(name='r1'), 
+                generalAgent(name='r2'),  
+                generalAgent(name='r3'),  
+                generalAgent(name='r4'),  
+                generalAgent(name='r5')
                 ]
         
         game = Game(agents)
@@ -60,8 +56,8 @@ for i in range(1):
                 allData.append(agents)
 
 
+
+print(game)
 print("allData",allData)
 print("Resistance Wins Spy Wins Vs Spy Wins",resistanceWins,",",spyWins)
-#print(game)
-
 
