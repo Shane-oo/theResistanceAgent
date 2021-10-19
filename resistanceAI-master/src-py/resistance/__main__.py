@@ -1,16 +1,16 @@
 from stupidAgents import StupidAgent
-from myAgent22501734 import logicalAgent
+from myAgent22501734 import bayesAgent
 from game import Game
 allData =[]
 spyWinCount = 0
 resitanceWinCount=0
 for i in range(15000):
-        agents = [logicalAgent(name='r1'), 
-                logicalAgent(name='r2'),  
-                logicalAgent(name='r3'),  
-                logicalAgent(name='r4'),  
-                logicalAgent(name='r5'),  
-                logicalAgent(name='r6'),  
+        agents = [bayesAgent(name='r1'), 
+                bayesAgent(name='r2'),  
+                bayesAgent(name='r3'),  
+                bayesAgent(name='r4'),  
+                bayesAgent(name='r5'),  
+                bayesAgent(name='r6'),  
                 StupidAgent(name='r7'),  
                 StupidAgent(name='r8'),  
                 StupidAgent(name='r9'),  

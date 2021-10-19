@@ -22,15 +22,12 @@ PROPOSED_TEAM_THAT_HAVENT_BEEN_ON_MISSIONS = 9
 
 IS_SPY = 10
 
-# Logical playing Agent
-class logicalAgent(Agent):        
-
+class bayesAgent(Agent): 
 
     '''My agent in the game The Resistance'''
     def __init__(self, name='Rando'):
         '''
         Initialises the agent.
-        Nothing to do here.
         '''
         #initialise class attributes
         self.name = name
@@ -38,6 +35,7 @@ class logicalAgent(Agent):
         self.spyWins = 0
         self.resistanceWins = 0
         self.roundCount = 1
+
         
        #Resistance Agent variables
         self.resistanceData = []
@@ -59,31 +57,134 @@ class logicalAgent(Agent):
         '''
         self.number_of_players = number_of_players
         self.player_number = player_number
-        
         self.spy_list = spy_list
         print("MyAgent playernum",self.player_number)
+        if(self.number_of_players==5 ):
+            self.howManySpies =2
+        elif(self.number_of_players==6 ):
+            self.howManySpies =2
+        elif(self.number_of_players==7 ):
+            self.howManySpies =3
+        elif(self.number_of_players==8 ):
+            self.howManySpies =3
+        elif(self.number_of_players==9 ):
+            self.howManySpies =3
+        elif(self.number_of_players==10 ):
+            self.howManySpies =4
+        
+        # Track variables that help with deducing the Spies
         if(not self.is_spy()):
             resistanceTable = []
             for i in range(number_of_players):
-                
                 if i == player_number:
                     resistanceTable.append(["MyAgent"])
                 else:
                     resistanceTable.append([0,0,0,0,0,0,0,0,0,0,0])
-                    
             self.resistanceData = resistanceTable
-
-
-            print(self.resistanceData)
-        else:
-            print("Im a spy")
+        
+            
 
     def is_spy(self):
-       
         '''
         returns True iff the agent is a spy
         '''
+        print("Spy list",self.spy_list)
         return self.player_number in self.spy_list
+    
+
+    def resistance_propose(self,team_size,betrayals_required = 1):
+        ''' 
+        Proposing the mission as the resistance
+        '''
+        team = []
+        team.append(self.player_number)
+        # For the first mission as resistance
+        # I want my agent to pick itself and pick at random the team members for mission
+        if(self.missionNum ==1):
+            while len(team)<team_size:
+                agent = random.randrange(self.number_of_players)
+                if agent not in team:
+                    team.append(agent)
+        # For other missions go of what other players have done
+        else:
+
+            onesInPredSpies = self.predictedSpies.count(1)
+            # Pick agents that are predicted to not be spies as long as naive bayes has predicted the exact amount of spies in game
+            if(len(self.predictedSpies)!=0 and onesInPredSpies == self.howManySpies):
+                agentNum = 0
+                for prediction in self.predictedSpies:
+                    if(prediction==0):
+                        if(len(team)<team_size):
+                            print("Adding ", agentNum, "to team")
+                            team.append(agentNum)
+                    agentNum+=1
+            
+            # pick members that are the most trusting
+            if(len(team)<team_size):
+                for trustingAgents in self.wentOnSuccessfulMissions:
+                    if(len(team)<team_size):
+                        agent = random.choice(self.wentOnSuccessfulMissions)
+                        if agent not in team and agent not in self.outedSpies:
+                            if(len(self.predictedSpies)!=0):
+                                print("agent",agent,"predictedspies",self.predictedSpies)
+                                if(self.predictedSpies[agent]!=1):
+                                    team.append(agent)
+                            else:
+                                team.append(agent)
+            # if still need team members
+            if(len(team)<team_size):
+                # pick members that have not failed any missions yet
+                for i in range(self.number_of_players):
+                    if((len(team)<team_size) and i not in self.wentOnFailedMissions):
+                        if i not in team and i not in self.outedSpies:
+                            if(len(self.predictedSpies)!=0):
+                                if(self.predictedSpies[i]!=1):
+                                    team.append(i)
+                            else:
+                                team.append(i)
+                # last resort is to pick from random potentially picking member that potentially went on failed mission
+                # but do not pick any agents that have been found to be spies
+                while len(team)<team_size:
+                    agent = random.randrange(self.number_of_players)
+                    if agent not in team and agent not in self.outedSpies:
+                        team.append(agent)
+        return team
+
+    def spy_propose(self,team_size,betrayals_required=1):
+        ''' 
+        Proposing the mission as the Spy
+        '''
+        team = []
+        # put self on team with only other reistance members
+        if(self.missionNum !=4):
+            team.append(self.player_number)
+            while len(team)<team_size:
+                agent = random.randrange(self.number_of_players)
+                if ((agent not in team) and agent not in self.spy_list):
+                    team.append(agent)
+        else:
+            team.append(self.player_number)
+            # need to win mission 4 to win game
+            if(self.spyWins == 1):
+                # add just 1 more spy to team spy if need 2 betrayals
+                if(betrayals_required == 2):   
+                    while len(team)<team_size:
+                        spy_count = sum(el in self.spy_list for el in mission)
+                        if(spy_count==1):
+                            agent = random.choice(self.spy_list)
+                        else:
+                            agent = random.randrange(self.number_of_players)
+                            # dont want to pick another spy at random
+                            while agent not in self.spy_list:
+                                agent = random.randrange(self.number_of_players)
+                        if (agent not in team):
+                            team.append(agent)
+            # mission 4 but dont need to win mission 4 or need to win mission 4 but only need 1 betrayal
+            while len(team)<team_size:
+                    agent = random.randrange(self.number_of_players)
+                    if (agent not in team and agent not in self.spy_list):
+                        team.append(agent)
+        return team
 
     def propose_mission(self, team_size, betrayals_required = 1):
         '''
@@ -93,100 +194,98 @@ class logicalAgent(Agent):
         '''
         team = []
         if(not self.is_spy()):
-            # For the first mission as resistance
-            # I want my agent to pick itself and pick at random the team members for mission
-            if(self.missionNum ==1):
-                team.append(self.player_number)
-                while len(team)<team_size:
-                    agent = random.randrange(self.number_of_players)
-                    if agent not in team:
-                        team.append(agent)
-            else:
-                team.append(self.player_number)
-                # pick members that are the most trusting
-                for trustingAgents in self.wentOnSuccessfulMissions:
-                    if(len(team)<team_size):
-                        agent = random.choice(self.wentOnSuccessfulMissions)
-                        if agent not in team and agent not in self.outedSpies :
-                            if(len(self.predictedSpies)!=0):
-                                print("agent",agent,"predictedspies",self.predictedSpies)
-                                if(self.predictedSpies[agent]!=1):
-                                    team.append(agent)
-                            else:
-                                team.append(agent)
-                            
-                # if still need team members
-                if(len(team)<team_size):
-                    # pick members that have not failed any missions yet
-                    for i in range(self.number_of_players):
-                        if((len(team)<team_size) and i not in self.wentOnFailedMissions):
-                            if i not in team and i not in self.outedSpies:
-                                
-                                if(len(self.predictedSpies)!=0):
-                                    
-                                    if(self.predictedSpies[i]!=1):
-                                        team.append(i)
-                                else:
-                                    team.append(i)
-                        
-
-                    
-                    # pick the members not predicted to be spies
-                    # And not the outed spies
-                    for i in range(self.number_of_players):
-                        if len(team)<team_size:
-                            if i not in team:
-                                if(len(self.predictedSpies)!=0):
-                                    if(self.predictedSpies[i]!=1 and i not in self.outedSpies):
-                                        team.append(i)
-
-                    # last resort is to pick from random potentially picking member that potentially went on failed mission
-                    # but do not pick any agents that have been found to be spies
-                    while len(team)<team_size:
-                        agent = random.randrange(self.number_of_players)
-                        print("stuck")
-                        print("the team",team,"the agent",agent,"the outed spies",self.outedSpies,"the predicted spies",self.predictedSpies)
-                        if agent not in team and agent not in self.outedSpies:
-                            continue
-                        else:
-                            team.append(agent)
-
-        ##################### Spy Moves ###############################
+           team = self.resistance_propose(team_size,betrayals_required)
         else:
-            if(self.missionNum ==1 and self.missionNum !=4):
-                team.append(self.player_number)
-                # put self on team with only other reistance members
-                while len(team)<team_size:
-                    agent = random.randrange(self.number_of_players)
-                    if ((agent not in team) and agent not in self.spy_list):
-                        team.append(agent)
-            else:# mission 4
-                team.append(self.player_number)
-                # need to win mission 4 and 5 to win game
-                if(self.spyWins == 1):
-                   
-                    # add just 1 more spy to team spy to team
-                    if(betrayals_required == 2):
-                        while len(team)<team_size:
-                            spy_count = sum(el in self.spy_list for el in mission)
-                            if(spy_count==1):
-                                agent = random.choice(self.spy_list)
-                            else:
-                                
-                                agent = random.randrange(self.number_of_players)
-                            if (agent not in team):
-                                
-                                team.append(agent)
-                    
-                else:
-                    while len(team)<team_size:
-                        
-                        agent = random.randrange(self.number_of_players)
-                        if ((agent not in team) and agent not in self.spy_list):
-                        
-                            team.append(agent)
-                
+            team = self.spy_propose(team_size,betrayals_required)
         return team        
+
+
+    def resistance_vote(self,mission,proposer):
+        '''
+        Determine vote for a resistance agent
+        '''
+
+        # should vote yes if in last round to avoid a mission fail     
+        if(self.roundCount == 5):
+            return True
+        if(self.missionNum ==1 ):
+            # no info to go off of for mission 1
+            if(self.player_number in mission):
+                return True
+            else:
+                return False
+        # Do not vote for a mission that know 100% is a spy
+        outedSpiesCount = sum(el in self.outedSpies for el in mission)
+        if(outedSpiesCount!=0):
+            return False
+        # Dont vote for mission if contains a predicted spy
+        agentNum = 0 
+        predSpies = []
+        
+        for predictions in self.predictedSpies:
+
+            if predictions == 1:
+                predSpies.append(agentNum)
+            agentNum+=1
+        predSpiesCount = sum(el in predSpies for el in mission)
+        print("predicted spies ",self.predictedSpies,"predected spies count ", predSpiesCount,"mission ",mission)
+        if predSpiesCount!=0:
+            return False
+
+        if(proposer in self.outedSpies):
+            return False
+        # Vote yes for a team that has all successfully passed mission
+        trustedAgentsCount = sum(el in self.wentOnSuccessfulMissions for el in mission)
+        if(trustedAgentsCount == len(mission)):
+            return True
+        failedAgentsCount = sum(el in self.wentOnFailedMissions for el in mission)
+        if(failedAgentsCount >0):
+            return False
+        # If there are some trust worthy members and members yet to be on mission return True
+        if(trustedAgentsCount>0 and failedAgentsCount ==0):
+            return True
+        # No info about anyone on the team
+        if(trustedAgentsCount == 0 and failedAgentsCount == 0): 
+            # return true if on team as at least you know there is one resistance member
+            if(self.player_number in mission):
+                return True
+            else:
+                return False
+
+    def spy_vote(self,mission,proposer):
+        '''
+        Determine the vote for a Spy agent
+        '''    
+        if(self.missionNum ==1 ):
+            # Spies will never sabotage first mission so does not matter who goes
+            return True
+        elif(self.missionNum != 1 and self.missionNum !=4):
+            # count amount of spies in mission
+            spy_count = sum(el in self.spy_list for el in mission)
+            # approve missions that has spies on it but not if mission is full of spies no mission has 0 spies
+            if(len(mission) != spy_count and spy_count!=0):
+                return True
+            else:   
+                return False
+        else:# mission 4
+            # need to win mission 4  to win game
+            if(self.spyWins == 1 ):
+                spy_count = sum(el in self.spy_list for el in mission)
+                if(self.number_of_players>=7 and spy_count<2):
+                    # need a mission with more than 2 spies
+                    return False
+                    # mission needs 2 betrayals and contines 2 or more spies
+                elif(self.number_of_players>=7 and spy_count>=2):
+                    return True
+                elif(self.number_of_players<7 and spy_count>0):
+                    return True
+                else:
+                    # Too many spies in team or no spies at all
+                    return False
+            else:
+            # dont care about mission 4 will go for mission 5 win
+                return True
+        
 
     def vote(self, mission, proposer):
         print("ROUND COUNT",self.roundCount)
@@ -202,92 +301,23 @@ class logicalAgent(Agent):
         if(proposer == self.player_number):
             print("agent is proposer return True")
             return True
-
-        ##################### Spy Moves ###############################
         if(self.is_spy()):
-            if(self.missionNum ==1 ):
-                # Spies will never sabotage first mission so does not matter who goes
-                return True
-            elif(self.missionNum != 1 and self.missionNum !=4):
-                    # count amount of spies in mission
-                    spy_count = sum(el in self.spy_list for el in mission)
-                    # approve missions that has spies on it but not if mission is full of spies
-                    if(len(mission) != spy_count and spy_count!=0):
-                        return True
-                    else:   
-                        return False
-            else:# mission 4
-                # need to win mission 4 and 5 to win game
-                if(self.spyWins == 1 ):
-                    spy_count = sum(el in self.spy_list for el in mission)
-                    if(self.number_of_players>=7 and spy_count<2):
-                        # need a mission with more than 2 spies
-                        return False
-                    elif(self.number_of_players<7 and spy_count ==1):
-                        return True
-                    else:
-                        # Too many spies in team or no spies at all
-                        return False
-                else:
-                    # dont care about mission 4 will go for mission 5 win
-                    return True
+            return self.spy_vote(mission, proposer)
         else:
-            if(self.missionNum ==1 ):
-                # no info to go off of for mission 1
-                return True
-            # should vote yes if in last round to avoid a mission fail     
-            if(self.roundCount == 5):
-                return True
-            outedSpiesCount = sum(el in self.outedSpies for el in mission)
-            
-            if(outedSpiesCount!=0):
-                return False
-            # Dont vote for mission if contains a predicted spy
-            index = 0
-            sussSpiesArr = []
-            for sussSpies in self.predictedSpies:
-                if sussSpies == 1:
-                    sussSpiesArr.append(index)
-                index+=1
-
-            predictedSpiesCount = sum(el in  sussSpiesArr for el in mission)
-            print("1 ",self.predictedSpies," ", predictedSpiesCount)
-            if(predictedSpiesCount!=0):
-                return False
-            
-            trustedAgentsCount = sum(el in self.wentOnSuccessfulMissions for el in mission)
-            # All trustworthy members on team
-            if(trustedAgentsCount == len(mission)):
-                return True
-            failedAgentsCount = sum(el in self.wentOnFailedMissions for el in mission)
-            if(failedAgentsCount >0 and len(self.predictedSpies) == 0):
-                return False
-
-            # If there are some trust worthy members and members yet to be on mission return True
-            if(trustedAgentsCount>0 and failedAgentsCount ==0 and len(self.predictedSpies) == 0):
-                return True
-            # No info about anyone on the team
-            # return true as at least you know there is one resistance member
-            if(self.player_number in mission):
-                return True
-            else:
-                return False
+            return self.resistance_vote(mission, proposer)
 
     def vote_outcome(self, mission, proposer, votes):
-        self.agentsWhoVoted = []
-        self.agentsWhoVoted = votes
-        self.roundCount +=1
         '''
         mission is a list of agents to be sent on a mission. 
         The agents on the mission are distinct and indexed between 0 and number_of_players.
         proposer is an int between 0 and number_of_players and is the index of the player who proposed the mission.
-        votes is a dictionary mapping player indexes to Booleans (True if they voted for the mission, False otherwise).
+        Votes just returns a list of players that voted for the mission to go ahead
+        it just a list of positive voters"
         No return value is required or expected.
         '''
-        '''
-        "votes just returns a list of players that voted for the mission to go ahead
-        it just a list of positive voters"
-        '''
+        # Record vote data
+        self.agentsWhoVoted = votes
+        self.roundCount +=1
         if(not self.is_spy()):
             if(proposer != self.player_number):
                 # if proposer proposed a mission that contains no succesful mission members
@@ -300,7 +330,6 @@ class logicalAgent(Agent):
                     unTrustingMembersCount = sum(el in self.wentOnFailedMissions for el in mission)
                     if(unTrustingMembersCount != 0):
                         self.resistanceData[proposer][PROPOSED_TEAM_HAS_UNSUCCESSFUL_MEMBERS] += 4*(self.missionNum*unTrustingMembersCount)
-                        
             
             for i in range(self.number_of_players):
                 # if agent votes no for mission its suss
@@ -316,13 +345,12 @@ class logicalAgent(Agent):
                     # If they vote yes for a mission that contains members that prevousily failed missions its suss
                     failedPriorMissionsMembers = sum(el in self.wentOnFailedMissions for el in mission)
                     self.resistanceData[i][VOTED_FOR_TEAM_HAS_UNSUCCESSFUL_MEMBERS ] += 4*(self.missionNum*failedPriorMissionsMembers)
-                
                 if (i in votes and i not in mission):
                     # voted for a mission they are not on
                     self.resistanceData[i][VOTED_FOR_MISION_NOT_ON] += self.missionNum
-            if(self.spyWins >= 1 or self.missionNum>=2):
+            # Run predictions after significant data is added
+            if(self.spyWins > 1 or self.missionNum>2 or self.roundCount ==4 ):
                 self.predictedSpies = naiveBayesClassifier(self.resistanceData)
-                print("2 ",self.predictedSpies)
         pass
 
     def betray(self, mission, proposer):
@@ -337,12 +365,11 @@ class logicalAgent(Agent):
             return False
         elif(self.missionNum == 5):
             return True
-        elif(self.missionNum != 1 and self.missionNum !=4):
+        elif(self.missionNum !=4):
             spy_count = sum(el in self.spy_list for el in mission)
-            # Agent is the only spy
             if(spy_count ==1):
                 return True
-            elif(spy_count>1):
+            elif(spy_count==2):
                 # 75 chance of betrayal
                 probability = 0.75
                 return random.random() <= probability
@@ -354,13 +381,13 @@ class logicalAgent(Agent):
             if(self.spyWins ==1):
                 spy_count = sum(el in self.spy_list for el in mission)
                 if(self.number_of_players>=7 and spy_count<2):
-                        # need a mission with more than 2 spies
+                    # need a mission with more than 2 spies
                     return False
                 elif(self.number_of_players<7 and spy_count == 1):
-                        # only need 1 betray
+                    # only need 1 betray
                     return True
                 elif(self.number_of_players>=7 and spy_count ==2):
-                        # need both spies to betray
+                     # need both spies to betray
                     return True
                 elif(self.number_of_players>=7 and spy_count >2):
                     #Hope that random choices you get at least 2 spies fail but also not exposing themself
@@ -372,11 +399,9 @@ class logicalAgent(Agent):
                     # dont care about mission 4 will go for mission 5 win
                     return False
 
-        #if self.is_spy():
-         #   return random.random()<0.3
 
     def mission_outcome(self, mission, proposer, betrayals, mission_success):
-        self.roundCount = 1
+        
         '''
         mission is a list of agents that were sent on the mission. 
         The agents on the mission are distinct and indexed between 0 and number_of_players.
@@ -385,6 +410,8 @@ class logicalAgent(Agent):
         and mission_success is True if there were not enough betrayals to cause the mission to fail, False otherwise.
         It iss not expected or required for this function to return anything.
         '''
+        self.roundCount = 1
+        # Record mission data
         if(not self.is_spy()):
             if(mission_success):
                 self.resistanceWins += 1
@@ -399,7 +426,6 @@ class logicalAgent(Agent):
                             continue
                         # Increases sussness if agent did not want a successful mission to happen
                         self.resistanceData[i][REJECTED_TEAM_SUCCESFUL_MISSION] += 2*(self.missionNum)
-           
             # failed mission
             else:
                 self.spyWins += 1
@@ -407,9 +433,7 @@ class logicalAgent(Agent):
                     if(agent is not self.player_number):
                         # Increase sussness if agent most liekly voted knowing mission would fail
                         self.resistanceData[agent][VOTED_FOR_FAILED_MISSION]+= 2*(self.missionNum)
-                # Increment the amounts that add to untrustworthyness
                 if(proposer is not self.player_number):
-
                     self.propFailedMissions.append(proposer)
                     propFailedMissionsCount = self.propFailedMissions.count(proposer)
                     if(propFailedMissionsCount == 0):
@@ -419,10 +443,10 @@ class logicalAgent(Agent):
                     # If proposer was in the mission that failed
                     if(proposer in mission):
                         self.resistanceData[proposer][PROP_TEAM_FAILED_MISSION] += 3*self.missionNum
-
                 for agent in mission:
                     # check for outed spies
                     self.stupid_spies_check(agent,proposer,mission,betrayals)
+
                     if(agent is not self.player_number):
                         self.wentOnFailedMissions.append(agent)
                         # remove agents from wentOnSuccessfulMissions if exist in wentOnFailedMissions
@@ -434,15 +458,12 @@ class logicalAgent(Agent):
                         if(failedMissionsCount == 0):
                             failedMissionsCount = 1
                         self.resistanceData[agent][WENT_ON_FAILED_MISSION] += failedMissionsCount*self.missionNum*(betrayals/len(mission))
-
-            # Bayes Classifier 
-            # Gather what the predicted spies could be (For effiency Im only going get predicted spies when spyWins ==2)
-            if(self.spyWins >= 1 or self.missionNum>=2):
+            if(self.spyWins > 1 or self.missionNum>2 ):
+            # Run predictions after significant data is added
                 self.predictedSpies = naiveBayesClassifier(self.resistanceData)
-                print("3 ",self.predictedSpies)
-            #naiveBayesClassifier(self.resistanceData)
         
-
+        print("Outed spies",self.outedSpies)
+        print("predicted spies after mission",self.predictedSpies)
         self.missionNum +=1
         pass
 
@@ -454,7 +475,6 @@ class logicalAgent(Agent):
         missions_failed, the number of missions (0-3) that have failed.
         '''
         #nothing to do here
-        
         pass
     
     def game_outcome(self, spies_win, spies):
@@ -471,7 +491,6 @@ class logicalAgent(Agent):
         '''
         Check for spies that have completely outed themselves on failed missions to The Resistance
         '''
-
         # spy stupidly outed themself on mission with me
         if(self.player_number in mission):
 
@@ -511,7 +530,6 @@ class logicalAgent(Agent):
                     self.outedSpies.append(stupidSpies)
 
 
-
     # Helper functions for data collection
     def returnValues(self,agentIndex):
         if(self.is_spy()):
@@ -519,17 +537,15 @@ class logicalAgent(Agent):
         else:
             return (1,self.resistanceData)
     def returnMyAgentInfo(self,myAgentIndex):
-        
-        
         return self.resistanceData[myAgentIndex]
     def whoWon(self):
-        
         if(self.spyWins > self.resistanceWins):
             return False
         elif(self.resistanceWins >self.spyWins):
             return True
         else:
             return -1
+    
 
 
 ################### Naive Bayes Classifier ####################
@@ -572,7 +588,7 @@ def naiveBayesClassifier(resistanceData):
         if(row[0] == "MyAgent"):
             spyPredictions.append("MyAgent")
         else:
-            # dont need IS_SPY()
+           
             print(row[:IS_SPY])
             spyPredictions.append(predict(model,row[:IS_SPY]))
     
@@ -651,5 +667,4 @@ def stdev(numbers):
 '''
     Training Data
 '''
-trainingDataLogicalSpy = [[20, 8.333333333333332, 30, 0, 20, 0, 84, 6, 72, 0, 0], [0, 4.833333333333333, 33, 2, 37, 30, 0, 0, 12, 10, 0], [18, 1.3333333333333333, 24, 0, 24, 9, 28, 5, 16, 0, 0], [28, 8.333333333333332, 0, 2, 7, 18, 184, 11, 64, 6, 1], [28, 3.6666666666666665, 0, 0, 9, 18, 160, 15, 52, 6, 1], [0, 0.6666666666666666, 3, 8, 63, 90, 0, 0, 84, 10, 0], [12, 3.6666666666666665, 39, 0, 48, 60, 96, 1, 96, 0, 0], [8, 0.5, 0, 0, 38, 30, 180, 3, 96, 0, 0], [12, 0.5, 0, 8, 24, 60, 312, 20, 116, 0, 1], [12, 3.6666666666666665, 0, 0, 16, 60, 376, 13, 100, 0, 1], [2, 3.1666666666666665, 6, 0, 22, 0, 32, 0, 32, 0, 0], [14, 8.333333333333332, 48, 0, 20, 0, 32, 1, 32, 0, 0], [22, 8.666666666666666, 63, 0, 16, 0, 84, 1, 84, 0, 0], [30, 3.6666666666666665, 0, 0, 4, 0, 196, 14, 48, 0, 1], [30, 8.166666666666666, 0, 0, 4, 0, 196, 5, 32, 0, 1], [18, 7.666666666666666, 24, 0, 9, 0, 44, 0, 32, 0, 0], [14, 4.666666666666666, 30, 0, 11, 0, 60, 3, 60, 0, 0], [0, 3.9999999999999996, 12, 2, 21, 24, 0, 0, 0, 0, 0], [28, 4.833333333333333, 18, 0, 2, 12, 132, 11, 12, 0, 1], [28, 3.333333333333333, 0, 2, 3, 12, 132, 8, 48, 0, 1], [18, 3.5, 33, 0, 30, 0, 104, 5, 64, 0, 0], [24, 8.333333333333332, 108, 0, 32, 0, 108, 1, 108, 0, 0], [0, 3.333333333333333, 0, 0, 44, 0, 0, 0, 72, 0, 0], [30, 8.666666666666666, 0, 0, 8, 0, 316, 10, 52, 0, 1], [30, 8.166666666666666, 0, 0, 8, 0, 316, 16, 84, 0, 1], [12, 8.333333333333332, 24, 0, 21, 0, 48, 0, 48, 0, 0], [0, 3.333333333333333, 12, 2, 28, 12, 0, 0, 40, 0, 0], [20, 4.833333333333333, 63, 0, 17, 0, 40, 3, 40, 0, 0], [28, 4.166666666666666, 0, 2, 1, 0, 208, 11, 48, 0, 1], [28, 3.9999999999999996, 0, 0, 0, 0, 208, 17, 32, 0, 1], [18, 3.333333333333333, 0, 0, 15, 90, 60, 4, 20, 0, 0], [18, 0, 0, 0, 15, 75, 40, 12, 0, 0, 0], [18, 2.6666666666666665, 0, 0, 15, 90, 60, 6, 20, 0, 0], [18, 9.333333333333332, 69, 12, 21, 114, 80, 5, 40, 0, 1], [18, 9.333333333333332, 0, 12, 21, 114, 80, 0, 40, 0, 1], [8, 6.5, 33, 0, 27, 0, 60, 3, 48, 0, 0], [0, 0.6666666666666666, 0, 0, 37, 0, 0, 0, 64, 0, 0], [14, 6.666666666666666, 48, 0, 27, 0, 56, 1, 56, 0, 0], [20, 2.6666666666666665, 0, 0, 8, 0, 220, 8, 48, 0, 1], [20, 3.1666666666666665, 0, 0, 8, 0, 220, 14, 60, 0, 1], [8, 0.5, 6, 0, 32, 0, 120, 6, 84, 0, 0], [12, 2.6666666666666665, 39, 8, 40, 0, 60, 1, 60, 0, 0], [0, 2.6666666666666665, 0, 8, 49, 0, 0, 0, 80, 0, 0], [12, 2.5, 0, 0, 9, 0, 328, 29, 96, 0, 1], [12, 0.6666666666666666, 0, 0, 9, 0, 328, 7, 80, 0, 1], [20, 8.333333333333332, 30, 0, 23, 0, 52, 3, 52, 0, 0], [0, 1.5, 33, 2, 37, 6, 0, 0, 0, 0, 0], [18, 8.333333333333332, 24, 0, 24, 0, 44, 3, 44, 0, 0], [28, 3.333333333333333, 0, 2, 7, 0, 184, 16, 52, 0, 1], [28, 4.833333333333333, 0, 0, 9, 0, 172, 12, 60, 0, 1], [4, 3.9999999999999996, 0, 0, 26, 90, 48, 0, 48, 0, 0], [0, 3.9999999999999996, 12, 10, 33, 102, 0, 0, 40, 0, 0], [20, 1.5, 18, 8, 17, 15, 80, 8, 40, 0, 0], [20, 3.9999999999999996, 30, 0, 5, 30, 228, 4, 108, 0, 1], [20, 1.5, 0, 2, 6, 30, 228, 19, 32, 0, 1], [0, 1.6666666666666665, 0, 10, 40, 63, 0, 0, 36, 0, 0], [20, 8.666666666666666, 30, 0, 17, 30, 100, 0, 56, 0, 0], [14, 0.6666666666666666, 0, 0, 20, 15, 52, 9, 16, 0, 0], [20, 3.9999999999999996, 12, 0, 9, 27, 100, 16, 16, 0, 1], [20, 1.5, 18, 2, 18, 27, 68, 15, 16, 0, 1], [0, 0, 0, 10, 55, 138, 0, 0, 68, 8, 0], [20, 8.666666666666666, 0, 0, 27, 102, 120, 0, 36, 0, 0], [14, 3.9999999999999996, 0, 0, 30, 72, 92, 5, 36, 0, 0], [20, 0.6666666666666666, 12, 2, 23, 66, 196, 12, 72, 12, 1], [20, 4.833333333333333, 63, 0, 14, 42, 228, 16, 56, 6, 1], [0, 8.333333333333332, 0, 2, 40, 30, 0, 0, 64, 6, 0], [20, 4.833333333333333, 63, 0, 25, 9, 60, 2, 60, 0, 0], [18, 3.333333333333333, 24, 0, 26, 0, 48, 3, 48, 0, 0], [28, 4.166666666666666, 6, 2, 5, 12, 288, 18, 60, 4, 1], [28, 3.9999999999999996, 0, 0, 4, 12, 288, 8, 72, 0, 1], [20, 4.833333333333333, 63, 0, 22, 0, 40, 2, 40, 0, 0], [18, 8.333333333333332, 24, 0, 23, 0, 48, 3, 48, 0, 0], [0, 3.333333333333333, 0, 2, 37, 21, 0, 0, 60, 0, 0], [28, 8.333333333333332, 12, 2, 5, 12, 244, 16, 60, 4, 1], [28, 1.5, 0, 0, 4, 12, 244, 12, 52, 6, 1], [20, 1.6666666666666665, 30, 8, 20, 51, 32, 5, 20, 0, 0], [0, 0.6666666666666666, 30, 10, 37, 96, 0, 0, 12, 0, 0], [10, 4.833333333333333, 0, 0, 21, 90, 44, 3, 32, 0, 0], [20, 3.9999999999999996, 0, 0, 6, 0, 240, 4, 72, 0, 1], [20, 3.6666666666666665, 0, 2, 7, 0, 240, 20, 84, 0, 1], [8, 1.6666666666666665, 0, 0, 10, 30, 20, 4, 20, 0, 0], [18, 1.6666666666666665, 30, 0, 10, 45, 20, 7, 20, 0, 0], [8, 2.6666666666666665, 0, 0, 15, 60, 0, 1, 0, 0, 0], [18, 6.0, 24, 12, 11, 54, 40, 5, 0, 0, 1], [18, 2.6666666666666665, 0, 12, 11, 54, 40, 5, 20, 0, 1], [18, 1.6666666666666665, 30, 0, 5, 0, 0, 7, 0, 0, 0], [18, 4.666666666666666, 0, 0, 5, 15, 20, 0, 0, 0, 0], [8, 1.3333333333333333, 0, 0, 10, 30, 0, 1, 0, 0, 0], [18, 1.3333333333333333, 24, 12, 6, 24, 60, 5, 0, 0, 1], [18, 1.6666666666666665, 0, 12, 6, 24, 60, 4, 40, 0, 1], [8, 1.6666666666666665, 0, 0, 15, 75, 20, 7, 20, 0, 0], [8, 1.3333333333333333, 0, 0, 15, 75, 40, 0, 40, 0, 0], [18, 4.666666666666666, 30, 0, 15, 90, 20, 1, 20, 0, 0], [18, 1.6666666666666665, 12, 12, 16, 84, 60, 4, 0, 0, 1], [18, 1.3333333333333333, 0, 12, 16, 84, 60, 10, 40, 0, 1], [12, 3.333333333333333, 24, 0, 20, 0, 44, 3, 44, 0, 0], [10, 6.666666666666666, 12, 0, 24, 0, 24, 1, 12, 0, 0], [0, 1.0, 18, 2, 33, 6, 0, 0, 24, 0, 0], [18, 0.6666666666666666, 0, 0, 9, 0, 160, 11, 72, 0, 1], [18, 3.6666666666666665, 0, 0, 9, 0, 160, 13, 44, 0, 1], [18, 2.6666666666666665, 0, 0, 15, 75, 60, 5, 20, 0, 0], [18, 0, 0, 0, 15, 75, 60, 12, 20, 0, 0], [18, 3.333333333333333, 0, 0, 15, 75, 60, 5, 20, 0, 0], [18, 9.333333333333332, 69, 12, 21, 111, 60, 5, 40, 10, 1], [18, 9.333333333333332, 0, 12, 21, 111, 60, 0, 20, 0, 1], [18, 4.666666666666666, 0, 0, 15, 75, 60, 0, 20, 0, 0], [18, 1.6666666666666665, 0, 0, 15, 75, 60, 8, 20, 0, 0], [18, 1.3333333333333333, 0, 0, 15, 75, 40, 5, 20, 0, 0], [18, 4.666666666666666, 69, 12, 21, 105, 60, 0, 40, 0, 1], [18, 0, 0, 12, 21, 105, 60, 9, 20, 0, 1], [14, 1.3333333333333333, 0, 0, 28, 90, 28, 3, 0, 0, 0], [0, 4.666666666666666, 72, 2, 43, 156, 0, 0, 28, 10, 0], [28, 8.666666666666666, 30, 0, 18, 45, 128, 8, 88, 0, 0], [28, 7.666666666666666, 0, 2, 15, 75, 124, 16, 28, 0, 1], [28, 3.9999999999999996, 0, 0, 6, 27, 124, 19, 28, 6, 1], [18, 0, 0, 0, 15, 75, 60, 12, 20, 0, 0], [18, 3.333333333333333, 0, 0, 15, 75, 40, 5, 0, 0, 0], [18, 2.6666666666666665, 0, 0, 15, 75, 60, 5, 20, 0, 0], [18, 9.333333333333332, 69, 12, 21, 111, 80, 0, 40, 10, 1], [18, 9.333333333333332, 0, 12, 21, 111, 80, 0, 40, 0, 1], [0, 0.6666666666666666, 0, 2, 23, 18, 0, 0, 32, 0, 0], [18, 9.166666666666666, 24, 0, 9, 0, 32, 3, 32, 0, 0], [14, 8.333333333333332, 30, 0, 11, 0, 40, 0, 40, 0, 0], [28, 3.333333333333333, 12, 2, 5, 12, 104, 12, 0, 0, 1], [28, 4.833333333333333, 18, 0, 4, 12, 104, 7, 0, 0, 1], [0, 6.666666666666666, 3, 0, 36, 0, 0, 0, 48, 0, 0], [8, 2.5, 18, 0, 24, 0, 68, 3, 56, 0, 0], [14, 3.333333333333333, 48, 0, 26, 0, 72, 1, 72, 0, 0], [20, 2.6666666666666665, 0, 0, 14, 0, 176, 5, 60, 0, 1], [20, 3.1666666666666665, 0, 0, 8, 0, 224, 14, 48, 0, 1], [8, 2.5, 33, 8, 27, 0, 60, 3, 48, 0, 0], [0, 0.6666666666666666, 0, 8, 37, 0, 0, 0, 60, 0, 0], [6, 2.6666666666666665, 12, 0, 27, 0, 56, 1, 56, 0, 0], [12, 0.5, 0, 0, 9, 0, 200, 22, 48, 0, 1], [12, 2.6666666666666665, 0, 0, 9, 0, 200, 6, 48, 0, 1], [0, 3.833333333333333, 6, 0, 47, 0, 0, 0, 88, 0, 0], [24, 8.333333333333332, 108, 0, 35, 0, 108, 1, 108, 0, 0], [22, 3.6666666666666665, 18, 0, 31, 0, 104, 6, 64, 0, 0], [30, 14.166666666666666, 0, 0, 5, 0, 388, 16, 108, 0, 1], [30, 3.333333333333333, 0, 0, 5, 0, 388, 9, 72, 0, 1], [10, 1.6666666666666665, 0, 0, 19, 51, 40, 5, 16, 0, 0], [20, 1.6666666666666665, 30, 8, 18, 0, 44, 6, 20, 0, 0], [0, 3.6666666666666665, 39, 10, 37, 42, 0, 0, 24, 0, 0], [20, 0.6666666666666666, 0, 2, 9, 6, 132, 19, 28, 0, 1], [20, 8.666666666666666, 0, 0, 8, 6, 132, 8, 44, 0, 1], [0, 3.833333333333333, 6, 0, 47, 0, 0, 0, 92, 0, 0], [24, 8.333333333333332, 108, 0, 35, 0, 92, 1, 92, 0, 0], [22, 7.666666666666666, 18, 0, 31, 0, 104, 6, 64, 0, 0], [30, 3.6666666666666665, 0, 0, 5, 0, 364, 14, 88, 0, 1], [30, 8.166666666666666, 0, 0, 5, 0, 364, 23, 88, 0, 1], [8, 6.5, 33, 0, 27, 0, 60, 0, 48, 0, 0], [0, 0.6666666666666666, 0, 0, 37, 0, 0, 0, 64, 0, 0], [14, 6.666666666666666, 48, 0, 27, 0, 44, 1, 44, 0, 0], [20, 3.1666666666666665, 0, 0, 6, 0, 216, 11, 60, 0, 1], [20, 2.6666666666666665, 0, 0, 12, 0, 168, 9, 36, 0, 1], [0, 1.3333333333333333, 0, 2, 40, 18, 0, 0, 72, 0, 0], [28, 8.666666666666666, 30, 0, 17, 0, 84, 4, 56, 0, 0], [12, 8.333333333333332, 0, 0, 25, 0, 48, 0, 16, 0, 0], [28, 3.9999999999999996, 12, 0, 4, 12, 188, 20, 16, 0, 1], [28, 4.166666666666666, 54, 2, 13, 12, 156, 16, 28, 0, 1], [18, 0, 0, 0, 15, 75, 60, 12, 20, 0, 0], [18, 7.999999999999999, 0, 0, 15, 90, 80, 0, 40, 0, 0], [18, 1.3333333333333333, 0, 0, 15, 90, 80, 6, 40, 0, 0], [18, 7.999999999999999, 69, 12, 21, 114, 80, 5, 40, 0, 1], [18, 3.333333333333333, 0, 12, 21, 114, 80, 4, 40, 0, 1], [18, 4.666666666666666, 0, 0, 0, 0, 20, 3, 0, 0, 0], [8, 1.3333333333333333, 0, 0, 5, 15, 0, 0, 0, 0, 0], [8, 1.6666666666666665, 0, 0, 5, 15, 0, 5, 0, 0, 0], [18, 1.6666666666666665, 12, 12, 6, 24, 0, 4, 0, 0, 1], [18, 1.3333333333333333, 15, 12, 6, 24, 0, 5, 0, 0, 1], [18, 8.333333333333332, 24, 0, 23, 0, 60, 3, 60, 0, 0], [20, 4.833333333333333, 63, 0, 25, 9, 40, 2, 40, 0, 0], [0, 0.6666666666666666, 12, 2, 38, 12, 0, 0, 32, 0, 0], [28, 8.333333333333332, 0, 0, 8, 6, 224, 8, 56, 0, 1], [28, 4.166666666666666, 0, 2, 6, 6, 236, 14, 60, 0, 1], [0, 3.9999999999999996, 0, 2, 40, 39, 0, 0, 44, 0, 0], [18, 3.333333333333333, 24, 0, 23, 0, 44, 3, 44, 0, 0], [20, 9.166666666666666, 63, 0, 25, 18, 60, 2, 60, 0, 0], [28, 3.9999999999999996, 12, 0, 7, 21, 228, 8, 32, 4, 1], [28, 4.166666666666666, 0, 2, 8, 21, 228, 21, 60, 6, 1], [22, 3.9999999999999996, 30, 0, 25, 0, 124, 4, 92, 0, 0], [0, 8.333333333333332, 12, 2, 41, 12, 0, 0, 32, 0, 0], [18, 4.166666666666666, 54, 0, 31, 0, 48, 3, 48, 0, 0], [28, 8.333333333333332, 0, 2, 5, 0, 320, 12, 108, 0, 1], [28, 1.5, 0, 0, 0, 0, 352, 21, 88, 0, 1], [6, 1.0, 18, 0, 36, 54, 60, 0, 60, 0, 0], [0, 1.0, 6, 10, 50, 108, 0, 0, 32, 4, 0], [4, 1.3333333333333333, 0, 0, 27, 18, 88, 11, 56, 6, 0], [10, 1.3333333333333333, 0, 0, 15, 63, 240, 11, 72, 0, 1], [10, 3.333333333333333, 0, 2, 17, 63, 232, 14, 68, 6, 1], [20, 4.166666666666666, 18, 0, 32, 18, 80, 7, 40, 0, 0], [0, 3.9999999999999996, 12, 2, 48, 6, 0, 0, 88, 0, 0], [28, 8.333333333333332, 69, 0, 30, 0, 104, 4, 104, 0, 0], [28, 0.6666666666666666, 0, 0, 8, 0, 316, 18, 84, 0, 1], [28, 9.166666666666666, 0, 2, 9, 0, 316, 18, 52, 0, 1], [0, 0, 9, 10, 24, 36, 0, 0, 12, 0, 0], [10, 8.666666666666666, 12, 0, 14, 30, 44, 1, 32, 0, 0], [14, 3.9999999999999996, 30, 8, 13, 0, 52, 0, 52, 0, 0], [20, 3.9999999999999996, 0, 0, 6, 0, 96, 3, 12, 0, 1], [20, 1.5, 0, 0, 3, 0, 108, 15, 12, 0, 1], [16, 1.6666666666666665, 30, 8, 25, 75, 32, 3, 20, 0, 0], [0, 1.5, 33, 10, 37, 108, 0, 0, 12, 4, 0], [10, 3.9999999999999996, 0, 0, 21, 90, 56, 7, 44, 6, 0], [20, 3.9999999999999996, 0, 0, 6, 9, 220, 4, 84, 6, 1], [20, 3.6666666666666665, 0, 2, 7, 9, 220, 25, 52, 6, 1], [14, 3.9999999999999996, 30, 8, 30, 60, 56, 0, 56, 0, 0], [10, 8.666666666666666, 12, 0, 32, 105, 44, 1, 32, 0, 0], [0, 0, 9, 10, 42, 111, 0, 0, 52, 0, 0], [20, 3.9999999999999996, 0, 0, 0, 0, 284, 7, 52, 0, 1], [20, 1.5, 0, 0, 4, 0, 268, 25, 92, 0, 1], [18, 3.833333333333333, 51, 0, 25, 0, 96, 3, 72, 0, 0], [12, 14.333333333333332, 39, 0, 31, 0, 24, 1, 24, 0, 0], [20, 3.333333333333333, 24, 0, 24, 0, 68, 4, 56, 0, 0], [30, 8.666666666666666, 0, 0, 6, 0, 252, 5, 84, 0, 1], [30, 3.1666666666666665, 0, 0, 6, 0, 252, 26, 52, 0, 1], [20, 4.833333333333333, 63, 8, 27, 69, 40, 2, 40, 0, 0], [0, 0.6666666666666666, 12, 10, 38, 111, 0, 0, 32, 0, 0], [10, 3.9999999999999996, 0, 0, 25, 105, 60, 4, 60, 0, 0], [20, 4.833333333333333, 0, 0, 6, 0, 252, 7, 72, 0, 1], [20, 0.6666666666666666, 0, 2, 8, 0, 232, 20, 72, 0, 1], [16, 3.1666666666666665, 42, 0, 28, 0, 68, 3, 44, 0, 0], [22, 8.666666666666666, 99, 0, 28, 0, 64, 1, 64, 0, 0], [12, 8.333333333333332, 0, 0, 26, 0, 68, 4, 56, 0, 0], [30, 7.666666666666666, 0, 0, 10, 0, 224, 12, 72, 0, 1], [30, 3.833333333333333, 0, 0, 10, 0, 224, 17, 56, 0, 1], [28, 9.166666666666666, 69, 0, 41, 18, 84, 2, 72, 0, 0], [0, 1.3333333333333333, 24, 2, 59, 42, 0, 0, 52, 0, 0], [20, 4.666666666666666, 0, 0, 33, 0, 120, 7, 68, 0, 0], [28, 9.0, 0, 0, 20, 18, 256, 24, 104, 6, 1], [28, 4.333333333333333, 0, 0, 16, 18, 272, 13, 68, 0, 1], [22, 8.333333333333332, 69, 0, 37, 0, 104, 0, 104, 0, 0], [0, 3.9999999999999996, 0, 2, 56, 18, 0, 0, 52, 0, 0], [20, 4.166666666666666, 18, 0, 36, 0, 80, 8, 40, 0, 0], [28, 0.6666666666666666, 12, 0, 12, 12, 296, 18, 72, 0, 1], [28, 9.166666666666666, 0, 2, 13, 12, 296, 22, 100, 0, 1], [0, 3.9999999999999996, 0, 2, 23, 18, 0, 0, 32, 0, 0], [18, 3.333333333333333, 24, 0, 9, 0, 32, 4, 32, 0, 0], [20, 9.166666666666666, 30, 0, 8, 0, 60, 2, 60, 0, 0], [28, 3.9999999999999996, 12, 0, 4, 12, 104, 12, 0, 0, 1], [28, 4.166666666666666, 18, 2, 5, 12, 104, 7, 0, 0, 1], [0, 1.3333333333333333, 0, 10, 59, 228, 0, 0, 76, 6, 0], [10, 0, 0, 0, 34, 138, 64, 5, 52, 0, 0], [10, 1.5, 0, 8, 33, 45, 92, 3, 40, 0, 0], [10, 1.3333333333333333, 30, 2, 21, 102, 244, 23, 52, 6, 1], [10, 4.333333333333333, 0, 0, 20, 102, 244, 14, 84, 0, 1], [10, 0.6666666666666666, 0, 0, 22, 63, 56, 3, 44, 0, 0], [20, 3.9999999999999996, 30, 8, 21, 45, 64, 4, 52, 0, 0], [0, 1.6666666666666665, 24, 10, 37, 102, 0, 0, 12, 6, 0], [14, 8.666666666666666, 0, 0, 11, 30, 148, 1, 40, 6, 1], [20, 1.5, 0, 2, 9, 30, 160, 25, 56, 6, 1], [0, 4.666666666666666, 42, 0, 59, 0, 0, 0, 80, 0, 0], [22, 4.333333333333333, 0, 0, 32, 0, 148, 6, 68, 0, 0], [30, 4.666666666666666, 69, 0, 37, 0, 104, 6, 76, 0, 0], [30, 14.333333333333332, 0, 0, 20, 0, 244, 10, 60, 0, 1], [30, 7.166666666666666, 0, 0, 24, 0, 228, 21, 72, 0, 1], [10, 3.6666666666666665, 0, 0, 13, 30, 44, 0, 32, 0, 0], [14, 3.9999999999999996, 57, 8, 15, 0, 40, 1, 40, 0, 0], [0, 1.6666666666666665, 9, 10, 23, 42, 0, 0, 12, 0, 0], [20, 3.9999999999999996, 0, 0, 0, 0, 128, 3, 32, 0, 1], [20, 1.5, 0, 0, 0, 0, 128, 16, 32, 0, 1], [18, 2.6666666666666665, 0, 0, 15, 75, 40, 5, 20, 0, 0], [18, 1.6666666666666665, 0, 0, 15, 75, 40, 8, 20, 0, 0], [18, 1.6666666666666665, 0, 0, 15, 75, 40, 4, 20, 0, 0], [18, 6.0, 69, 12, 21, 105, 80, 0, 20, 0, 1], [18, 2.6666666666666665, 0, 12, 21, 105, 80, 5, 60, 0, 1], [0, 0.6666666666666666, 0, 10, 44, 108, 0, 0, 88, 0, 0], [20, 4.833333333333333, 30, 0, 27, 90, 72, 3, 72, 4, 0], [14, 3.9999999999999996, 12, 8, 29, 45, 80, 0, 40, 0, 0], [20, 3.9999999999999996, 0, 0, 7, 21, 264, 8, 64, 0, 1], [20, 1.5, 18, 0, 7, 21, 264, 25, 40, 0, 1], [0, 3.333333333333333, 3, 0, 65, 0, 0, 0, 100, 0, 0], [16, 0.5, 0, 0, 38, 0, 188, 7, 104, 0, 0], [20, 7.666666666666666, 87, 0, 50, 0, 112, 1, 112, 0, 0], [20, 3.6666666666666665, 0, 0, 18, 0, 392, 9, 84, 0, 1], [20, 3.1666666666666665, 0, 0, 22, 0, 360, 24, 116, 0, 1], [18, 3.333333333333333, 24, 0, 23, 0, 44, 3, 44, 0, 0], [20, 9.166666666666666, 63, 0, 25, 18, 60, 2, 60, 0, 0], [0, 3.9999999999999996, 12, 2, 38, 12, 0, 0, 32, 0, 0], [28, 3.9999999999999996, 0, 0, 5, 6, 236, 16, 60, 0, 1], [28, 4.166666666666666, 0, 2, 10, 6, 204, 17, 72, 0, 1], [0, 1.0, 15, 0, 37, 0, 0, 0, 16, 0, 0], [6, 0.6666666666666666, 0, 0, 17, 0, 28, 1, 12, 0, 0], [12, 1.0, 18, 0, 17, 0, 28, 5, 12, 0, 0], [12, 4.833333333333333, 0, 0, 19, 0, 84, 8, 32, 0, 1], [12, 1.8333333333333333, 0, 0, 19, 0, 84, 5, 24, 0, 1], [18, 8.333333333333332, 24, 0, 22, 18, 60, 3, 60, 0, 0], [20, 3.9999999999999996, 30, 0, 21, 18, 52, 4, 52, 0, 0], [0, 1.5, 33, 2, 37, 54, 0, 0, 0, 0, 0], [28, 4.166666666666666, 0, 2, 9, 30, 176, 18, 44, 6, 1], [28, 8.333333333333332, 0, 0, 11, 30, 164, 4, 44, 0, 1], [28, 8.333333333333332, 69, 0, 28, 0, 72, 3, 72, 0, 0], [0, 0.6666666666666666, 12, 2, 43, 6, 0, 0, 60, 0, 0], [20, 9.166666666666666, 18, 0, 27, 0, 80, 2, 40, 0, 0], [28, 3.9999999999999996, 0, 0, 5, 0, 296, 17, 92, 0, 1], [28, 4.166666666666666, 0, 2, 6, 0, 296, 21, 72, 0, 1], [4, 1.0, 0, 0, 17, 9, 48, 2, 48, 0, 0], [0, 1.3333333333333333, 12, 10, 33, 42, 0, 0, 0, 0, 0], [10, 1.0, 18, 8, 18, 0, 12, 3, 12, 0, 0], [10, 3.333333333333333, 0, 0, 9, 27, 148, 15, 44, 6, 1], [10, 1.3333333333333333, 0, 0, 9, 27, 148, 3, 44, 6, 1], [8, 0.5, 6, 0, 30, 0, 132, 3, 96, 0, 0], [0, 2.6666666666666665, 0, 8, 47, 0, 0, 0, 56, 0, 0], [12, 2.6666666666666665, 39, 8, 38, 0, 48, 1, 48, 0, 0], [12, 0.6666666666666666, 0, 0, 12, 0, 272, 8, 80, 0, 1], [12, 2.5, 0, 0, 12, 0, 272, 19, 80, 0, 1], [0, 0, 0, 10, 58, 141, 0, 0, 96, 24, 0], [20, 9.333333333333332, 30, 8, 33, 84, 92, 4, 68, 0, 0], [6, 1.6666666666666665, 0, 0, 43, 174, 28, 3, 16, 0, 0], [20, 1.3333333333333333, 30, 2, 15, 42, 296, 28, 64, 10, 1], [20, 9.333333333333332, 0, 0, 10, 30, 312, 13, 80, 6, 1], [18, 7.666666666666666, 24, 0, 17, 21, 44, 0, 32, 0, 0], [0, 4.666666666666666, 6, 2, 27, 33, 0, 0, 40, 4, 0], [14, 3.9999999999999996, 30, 0, 16, 24, 72, 1, 72, 0, 0], [28, 1.5, 18, 0, 3, 9, 132, 16, 0, 6, 1], [28, 8.333333333333332, 0, 2, 4, 9, 132, 3, 16, 0, 1], [0, 3.9999999999999996, 0, 10, 27, 36, 0, 0, 48, 0, 0], [4, 0.6666666666666666, 12, 0, 20, 30, 48, 0, 48, 0, 0], [20, 4.833333333333333, 63, 8, 16, 0, 60, 3, 60, 0, 0], [20, 1.5, 0, 0, 0, 0, 220, 16, 48, 0, 1], [20, 3.9999999999999996, 0, 0, 0, 0, 220, 3, 32, 0, 1], [20, 4.833333333333333, 30, 8, 20, 54, 72, 2, 60, 0, 0], [0, 3.9999999999999996, 30, 10, 37, 96, 0, 0, 12, 0, 0], [10, 0, 0, 0, 21, 90, 44, 6, 32, 0, 0], [20, 3.6666666666666665, 0, 0, 6, 0, 200, 18, 64, 0, 1], [20, 3.9999999999999996, 0, 0, 9, 0, 176, 3, 52, 0, 1], [0, 0.6666666666666666, 3, 8, 41, 15, 0, 0, 56, 0, 0], [8, 3.833333333333333, 0, 0, 28, 15, 76, 3, 64, 0, 0], [22, 8.666666666666666, 99, 8, 30, 0, 64, 1, 64, 0, 0], [22, 3.833333333333333, 0, 0, 8, 0, 260, 24, 72, 0, 1], [22, 3.6666666666666665, 0, 0, 8, 0, 260, 9, 72, 0, 1], [8, 3.833333333333333, 6, 0, 28, 30, 68, 3, 56, 0, 0], [22, 8.666666666666666, 99, 8, 28, 0, 64, 1, 64, 0, 0], [0, 0.6666666666666666, 0, 8, 39, 30, 0, 0, 56, 0, 0], [22, 8.666666666666666, 0, 0, 6, 0, 260, 4, 72, 0, 1], [22, 0.5, 0, 0, 3, 0, 284, 25, 72, 0, 1], [8, 3.5, 33, 0, 30, 0, 104, 0, 64, 0, 0], [14, 3.333333333333333, 48, 0, 32, 0, 72, 1, 72, 0, 0], [6, 3.333333333333333, 0, 0, 28, 0, 104, 1, 64, 0, 0], [20, 3.6666666666666665, 0, 10, 18, 0, 224, 5, 84, 0, 1], [20, 3.1666666666666665, 0, 10, 18, 0, 224, 8, 84, 0, 1], [0, 3.9999999999999996, 0, 2, 40, 24, 0, 0, 44, 0, 0], [12, 3.333333333333333, 24, 0, 26, 0, 44, 1, 44, 0, 0], [20, 9.166666666666666, 63, 0, 25, 0, 60, 3, 60, 0, 0], [28, 3.9999999999999996, 12, 0, 7, 12, 212, 7, 32, 0, 1], [28, 4.166666666666666, 0, 0, 7, 12, 212, 22, 44, 0, 1], [8, 3.5, 33, 8, 33, 75, 104, 0, 64, 0, 0], [0, 0.6666666666666666, 0, 8, 47, 150, 0, 0, 96, 0, 0], [6, 0.6666666666666666, 12, 0, 35, 120, 88, 1, 88, 0, 0], [12, 3.6666666666666665, 0, 0, 13, 60, 260, 1, 64, 0, 1], [12, 0.5, 0, 0, 10, 60, 284, 27, 64, 0, 1], [8, 3.5, 33, 8, 33, 45, 104, 0, 64, 0, 0], [0, 0.6666666666666666, 0, 8, 47, 135, 0, 0, 80, 0, 0], [6, 0.6666666666666666, 12, 0, 35, 105, 88, 1, 88, 0, 0], [12, 0.5, 0, 0, 15, 90, 216, 20, 52, 0, 1], [12, 3.6666666666666665, 0, 0, 15, 90, 216, 10, 64, 0, 1], [8, 3.5, 33, 0, 20, 0, 24, 0, 24, 0, 0], [14, 3.333333333333333, 48, 0, 17, 0, 48, 1, 48, 0, 0], [16, 13.333333333333332, 30, 0, 13, 0, 84, 1, 84, 0, 0], [30, 13.666666666666666, 0, 0, 3, 0, 140, 8, 12, 0, 1], [30, 13.166666666666666, 0, 0, 3, 0, 140, 8, 12, 0, 1], [20, 1.6666666666666665, 30, 0, 34, 141, 84, 5, 72, 0, 0], [20, 1.5, 0, 8, 33, 60, 92, 8, 40, 0, 0], [0, 4.666666666666666, 30, 10, 57, 117, 0, 0, 52, 0, 0], [20, 9.333333333333332, 0, 0, 13, 21, 328, 6, 104, 0, 1], [20, 1.3333333333333333, 0, 2, 14, 21, 328, 32, 100, 10, 1], [0, 3.9999999999999996, 0, 2, 27, 12, 0, 0, 32, 0, 0], [12, 3.333333333333333, 48, 0, 20, 0, 32, 1, 32, 0, 0], [20, 9.166666666666666, 63, 0, 16, 0, 60, 3, 60, 0, 0], [28, 4.166666666666666, 0, 0, 0, 0, 220, 16, 48, 0, 1], [28, 3.9999999999999996, 0, 0, 0, 0, 220, 7, 48, 0, 1], [16, 4.833333333333333, 63, 0, 27, 9, 40, 0, 40, 0, 0], [18, 8.333333333333332, 24, 0, 26, 9, 48, 4, 48, 4, 0], [0, 3.333333333333333, 12, 2, 38, 18, 0, 0, 40, 4, 0], [28, 1.5, 0, 0, 2, 0, 264, 19, 52, 0, 1], [28, 8.333333333333332, 0, 0, 2, 0, 264, 17, 84, 6, 1], [6, 0, 0, 0, 28, 75, 56, 3, 32, 0, 0], [10, 1.3333333333333333, 0, 8, 27, 27, 48, 10, 24, 0, 0], [0, 2.0, 33, 10, 47, 162, 0, 0, 24, 4, 0], [10, 5.333333333333333, 0, 0, 17, 93, 164, 1, 40, 0, 1], [10, 5.333333333333333, 0, 2, 18, 93, 164, 21, 68, 8, 1], [0, 3.9999999999999996, 0, 10, 46, 81, 0, 0, 72, 0, 0], [14, 3.9999999999999996, 57, 0, 30, 60, 124, 0, 92, 0, 0], [10, 1.5, 18, 0, 36, 75, 32, 3, 32, 0, 0], [20, 3.9999999999999996, 0, 0, 0, 0, 356, 20, 92, 0, 1], [20, 1.5, 0, 8, 8, 0, 292, 22, 88, 0, 1], [18, 1.3333333333333333, 0, 0, 15, 90, 60, 5, 40, 0, 0], [18, 1.6666666666666665, 0, 0, 15, 75, 20, 8, 20, 0, 0], [18, 4.666666666666666, 0, 0, 15, 90, 60, 0, 40, 0, 0], [18, 1.3333333333333333, 54, 12, 21, 120, 80, 5, 20, 0, 1], [18, 1.6666666666666665, 0, 12, 21, 120, 80, 9, 60, 0, 1], [18, 2.6666666666666665, 0, 0, 15, 75, 40, 8, 20, 0, 0], [18, 1.6666666666666665, 0, 0, 15, 60, 20, 4, 0, 0, 0], [18, 1.6666666666666665, 0, 0, 15, 60, 20, 5, 0, 0, 0], [18, 2.6666666666666665, 54, 12, 21, 114, 60, 5, 20, 8, 1], [18, 6.0, 0, 12, 21, 114, 60, 0, 40, 10, 1], [12, 3.333333333333333, 24, 0, 20, 0, 72, 0, 60, 0, 0], [0, 1.0, 6, 2, 33, 6, 0, 0, 0, 0, 0], [10, 2.6666666666666665, 18, 0, 21, 0, 24, 4, 24, 0, 0], [18, 3.333333333333333, 0, 0, 9, 0, 144, 3, 44, 0, 1], [18, 3.6666666666666665, 0, 0, 9, 0, 144, 17, 56, 0, 1], [18, 4.166666666666666, 24, 0, 19, 0, 44, 2, 32, 0, 0], [20, 4.666666666666666, 30, 0, 18, 0, 72, 6, 60, 0, 0], [0, 4.666666666666666, 30, 2, 37, 12, 0, 0, 12, 0, 0], [28, 4.333333333333333, 0, 0, 11, 6, 148, 14, 28, 0, 1], [28, 9.0, 0, 2, 9, 6, 172, 10, 56, 0, 1], [0, 8.333333333333332, 3, 0, 46, 0, 0, 0, 52, 0, 0], [18, 3.5, 18, 0, 30, 0, 112, 5, 72, 0, 0], [24, 8.333333333333332, 108, 0, 34, 0, 108, 1, 108, 0, 0], [30, 8.666666666666666, 0, 0, 10, 0, 272, 10, 52, 0, 1], [30, 3.1666666666666665, 0, 0, 10, 0, 272, 21, 84, 0, 1], [0, 8.333333333333332, 0, 2, 27, 12, 0, 0, 32, 0, 0], [12, 3.333333333333333, 48, 0, 20, 0, 48, 0, 48, 0, 0], [20, 4.833333333333333, 63, 0, 16, 0, 60, 3, 60, 0, 0], [28, 4.166666666666666, 0, 0, 0, 0, 184, 16, 32, 0, 1], [28, 3.9999999999999996, 0, 0, 0, 0, 184, 7, 32, 0, 1], [20, 8.666666666666666, 30, 0, 23, 0, 96, 0, 72, 0, 0], [0, 4.666666666666666, 24, 2, 37, 6, 0, 0, 12, 0, 0], [18, 3.333333333333333, 24, 0, 24, 0, 40, 4, 28, 0, 0], [28, 4.666666666666666, 0, 0, 6, 0, 236, 17, 84, 0, 1], [28, 3.6666666666666665, 0, 0, 6, 0, 236, 9, 84, 0, 1], [20, 3.9999999999999996, 30, 8, 25, 39, 72, 3, 72, 0, 0], [0, 1.5, 6, 10, 40, 69, 0, 0, 32, 0, 0], [10, 3.9999999999999996, 0, 0, 27, 90, 60, 4, 60, 0, 0], [20, 4.833333333333333, 18, 0, 3, 9, 264, 11, 40, 0, 1], [20, 0.6666666666666666, 0, 2, 8, 9, 232, 22, 88, 0, 1], [4, 0.6666666666666666, 0, 0, 30, 45, 144, 0, 72, 0, 0], [0, 0.6666666666666666, 12, 10, 51, 126, 0, 0, 88, 0, 0], [10, 1.5, 18, 0, 36, 90, 72, 3, 72, 0, 0], [10, 1.5, 0, 8, 18, 60, 272, 16, 92, 0, 1], [10, 0.6666666666666666, 0, 0, 10, 60, 336, 20, 92, 0, 1], [18, 3.333333333333333, 24, 0, 18, 0, 32, 3, 32, 0, 0], [0, 3.9999999999999996, 12, 2, 28, 6, 0, 0, 40, 0, 0], [20, 9.166666666666666, 63, 0, 17, 0, 60, 2, 60, 0, 0], [28, 3.9999999999999996, 0, 0, 0, 0, 208, 8, 48, 0, 1], [28, 4.166666666666666, 0, 2, 1, 0, 208, 11, 48, 0, 1], [8, 8.166666666666666, 6, 0, 30, 0, 76, 3, 64, 0, 0], [22, 8.666666666666666, 99, 0, 31, 0, 84, 1, 84, 0, 0], [20, 3.333333333333333, 24, 0, 29, 0, 84, 4, 72, 0, 0], [30, 3.9999999999999996, 0, 0, 11, 0, 256, 8, 84, 0, 1], [30, 7.5, 0, 0, 11, 0, 256, 10, 72, 0, 1]]
-
+trainingDataLogicalSpy = [[20, 3.9999999999999996, 30, 0, 0, 0, 116, 7, 40, 0, 1], [14, 0.6666666666666666, 12, 10, 12, 0, 40, 5, 0, 0, 0], [10, 8.666666666666666, 18, 8, 13, 45, 12, 0, 12, 0, 0], [20, 1.5, 0, 0, 0, 0, 116, 12, 32, 0, 1], [4, 1.6666666666666665, 0, 2, 13, 45, 32, 2, 32, 0, 0], [20, 0.6666666666666666, 0, 0, 3, 0, 156, 16, 32, 0, 1], [4, 0.6666666666666666, 12, 2, 20, 30, 48, 0, 48, 0, 0], [14, 3.9999999999999996, 30, 8, 15, 0, 72, 0, 72, 0, 0], [10, 4.833333333333333, 18, 10, 21, 30, 0, 2, 0, 0, 0], [20, 4.833333333333333, 0, 0, 3, 0, 156, 7, 32, 0, 0], [20, 3.9999999999999996, 0, 0, 10, 30, 116, 12, 40, 0, 1], [20, 8.666666666666666, 12, 10, 20, 45, 92, 0, 40, 0, 0], [20, 1.5, 18, 0, 10, 30, 116, 13, 40, 0, 1], [14, 1.6666666666666665, 30, 2, 24, 60, 36, 2, 36, 0, 0], [14, 0.6666666666666666, 0, 8, 22, 45, 40, 5, 20, 0, 0], [20, 1.5, 0, 0, 0, 0, 36, 11, 0, 0, 1], [20, 3.9999999999999996, 12, 0, 0, 0, 36, 8, 0, 4, 1], [10, 8.666666666666666, 18, 8, 9, 15, 12, 0, 12, 0, 0], [4, 0.6666666666666666, 0, 2, 9, 24, 16, 0, 16, 0, 0], [14, 1.6666666666666665, 30, 10, 8, 9, 20, 2, 20, 0, 0], [20, 3.9999999999999996, 0, 0, 8, 39, 108, 7, 40, 0, 1], [4, 0.6666666666666666, 12, 10, 21, 30, 40, 0, 40, 0, 0], [20, 8.666666666666666, 30, 10, 15, 72, 64, 0, 52, 0, 0], [20, 1.5, 18, 0, 8, 39, 108, 17, 12, 6, 1], [4, 1.6666666666666665, 0, 0, 21, 99, 16, 2, 16, 0, 0], [4, 0.6666666666666666, 0, 16, 18, 99, 108, 12, 40, 0, 1], [4, 0.6666666666666666, 12, 2, 14, 45, 76, 3, 20, 0, 0], [4, 0.6666666666666666, 0, 16, 18, 99, 108, 10, 52, 6, 1], [4, 0, 0, 8, 22, 87, 40, 2, 20, 0, 0], [4, 0, 0, 2, 24, 90, 0, 2, 0, 0, 0], [20, 0.6666666666666666, 0, 0, 0, 0, 176, 16, 40, 10, 1], [14, 3.9999999999999996, 57, 8, 16, 0, 60, 0, 60, 0, 0], [10, 8.666666666666666, 18, 10, 19, 30, 12, 0, 12, 0, 0], [20, 4.833333333333333, 0, 0, 0, 0, 176, 8, 32, 0, 1], [4, 0, 0, 2, 18, 45, 32, 2, 32, 0, 0], [20, 8.666666666666666, 30, 8, 7, 0, 52, 0, 40, 0, 0], [4, 0.6666666666666666, 12, 10, 16, 15, 0, 0, 0, 0, 0], [20, 3.9999999999999996, 0, 0, 0, 0, 92, 3, 24, 0, 1], [20, 1.5, 18, 0, 0, 0, 92, 15, 12, 0, 1], [4, 1.6666666666666665, 0, 2, 12, 30, 16, 2, 16, 0, 0], [14, 3.9999999999999996, 30, 8, 10, 0, 40, 0, 40, 0, 0], [10, 3.6666666666666665, 12, 10, 13, 30, 12, 0, 0, 0, 0], [20, 3.9999999999999996, 0, 0, 0, 0, 76, 3, 12, 0, 1], [20, 1.5, 18, 0, 0, 0, 76, 15, 12, 0, 1], [4, 1.6666666666666665, 0, 2, 12, 30, 32, 2, 32, 0, 0], [10, 3.6666666666666665, 0, 8, 12, 30, 52, 0, 40, 0, 0], [14, 3.9999999999999996, 57, 8, 15, 30, 40, 0, 40, 0, 0], [20, 0.6666666666666666, 0, 0, 5, 30, 96, 13, 24, 0, 1], [20, 4.833333333333333, 18, 0, 5, 30, 96, 6, 0, 0, 1], [4, 1.6666666666666665, 0, 2, 17, 75, 32, 2, 32, 0, 0], [20, 3.9999999999999996, 0, 0, 3, 0, 152, 3, 60, 0, 1], [20, 3.9999999999999996, 57, 10, 13, 30, 60, 3, 60, 0, 0], [10, 3.9999999999999996, 0, 10, 15, 60, 12, 3, 12, 0, 0], [20, 1.5, 18, 0, 3, 0, 152, 17, 0, 0, 1], [10, 1.5, 0, 0, 13, 39, 32, 2, 32, 0, 0], [20, 3.9999999999999996, 0, 0, 5, 15, 192, 8, 60, 0, 1], [14, 0.6666666666666666, 12, 10, 18, 45, 80, 5, 40, 0, 0], [20, 4.833333333333333, 63, 10, 20, 60, 40, 2, 40, 0, 0], [4, 3.9999999999999996, 0, 0, 23, 60, 32, 0, 32, 0, 0], [20, 1.5, 0, 0, 5, 15, 192, 17, 60, 0, 0], [20, 0.6666666666666666, 0, 0, 3, 0, 152, 16, 32, 0, 1], [4, 0.6666666666666666, 12, 0, 19, 30, 48, 0, 48, 0, 0], [14, 3.9999999999999996, 30, 10, 16, 0, 52, 0, 52, 0, 0], [10, 4.833333333333333, 18, 10, 21, 30, 0, 2, 0, 0, 0], [20, 4.833333333333333, 0, 0, 3, 0, 152, 7, 32, 0, 0], [20, 3.9999999999999996, 0, 0, 0, 0, 72, 3, 0, 0, 1], [14, 0.6666666666666666, 12, 10, 8, 0, 40, 5, 0, 0, 0], [20, 1.5, 18, 0, 0, 0, 72, 12, 0, 0, 1], [4, 3.9999999999999996, 0, 0, 8, 30, 32, 0, 32, 0, 0], [20, 4.833333333333333, 30, 10, 5, 0, 40, 2, 40, 0, 0], [10, 0.6666666666666666, 0, 0, 12, 30, 48, 3, 48, 0, 0], [20, 3.9999999999999996, 57, 10, 12, 0, 60, 3, 60, 4, 0], [20, 0.6666666666666666, 0, 0, 0, 0, 136, 17, 12, 6, 1], [10, 4.833333333333333, 18, 10, 17, 30, 0, 2, 0, 0, 0], [20, 4.833333333333333, 0, 0, 0, 0, 136, 5, 32, 0, 0], [20, 0.6666666666666666, 0, 0, 0, 0, 124, 12, 20, 0, 1], [14, 3.9999999999999996, 57, 10, 17, 30, 40, 0, 40, 0, 0], [10, 3.6666666666666665, 18, 8, 18, 60, 12, 0, 12, 0, 0], [20, 4.833333333333333, 0, 0, 0, 0, 124, 8, 32, 0, 1], [4, 1.6666666666666665, 0, 2, 18, 60, 32, 2, 32, 0, 0], [20, 0.6666666666666666, 0, 0, 0, 0, 164, 16, 60, 0, 1], [14, 3.9999999999999996, 57, 10, 17, 15, 40, 0, 40, 0, 0], [10, 1.5, 18, 10, 19, 30, 0, 2, 0, 0, 0], [20, 4.833333333333333, 0, 0, 0, 0, 164, 8, 32, 0, 1], [4, 3.9999999999999996, 0, 0, 17, 30, 32, 0, 32, 0, 0], [20, 0.6666666666666666, 0, 8, 13, 15, 80, 8, 40, 0, 0], [20, 3.9999999999999996, 12, 0, 5, 15, 144, 8, 40, 0, 1], [20, 4.833333333333333, 63, 8, 18, 45, 40, 2, 40, 0, 0], [20, 1.5, 0, 0, 5, 15, 144, 17, 32, 0, 1], [10, 3.9999999999999996, 0, 2, 20, 60, 32, 3, 32, 0, 0], [10, 3.6666666666666665, 0, 8, 13, 30, 32, 0, 20, 0, 0], [14, 3.9999999999999996, 57, 10, 17, 30, 40, 0, 40, 0, 0], [20, 4.833333333333333, 18, 0, 5, 30, 104, 7, 0, 0, 1], [20, 0.6666666666666666, 0, 0, 5, 30, 104, 12, 32, 0, 1], [4, 1.6666666666666665, 0, 2, 18, 75, 32, 2, 32, 0, 0], [20, 3.9999999999999996, 0, 0, 0, 0, 172, 8, 60, 0, 1], [14, 3.9999999999999996, 57, 10, 18, 45, 60, 0, 60, 0, 0], [20, 1.5, 18, 10, 15, 30, 40, 7, 0, 0, 0], [4, 3.9999999999999996, 0, 0, 18, 60, 32, 0, 32, 0, 0], [20, 1.5, 0, 0, 0, 0, 172, 17, 40, 10, 0], [20, 3.9999999999999996, 0, 0, 0, 0, 84, 7, 0, 0, 1], [4, 0.6666666666666666, 12, 10, 13, 15, 0, 0, 0, 0, 0], [20, 1.5, 18, 0, 0, 0, 84, 8, 12, 0, 1], [4, 1.6666666666666665, 0, 2, 9, 30, 32, 2, 32, 0, 0], [20, 8.666666666666666, 30, 8, 4, 0, 52, 0, 40, 0, 0], [4, 0.6666666666666666, 0, 0, 16, 30, 48, 0, 48, 0, 0], [14, 7.333333333333333, 57, 10, 16, 0, 60, 0, 60, 0, 0], [10, 1.5, 18, 10, 18, 30, 0, 2, 0, 0, 0], [20, 8.166666666666666, 0, 0, 0, 0, 188, 7, 48, 0, 1], [20, 7.333333333333333, 0, 0, 0, 0, 188, 7, 32, 0, 0], [20, 0.6666666666666666, 0, 0, 3, 0, 144, 12, 60, 0, 1], [14, 3.9999999999999996, 57, 10, 16, 15, 40, 0, 40, 0, 0], [10, 3.6666666666666665, 0, 10, 15, 45, 24, 0, 12, 0, 0], [20, 4.833333333333333, 18, 0, 3, 0, 144, 8, 12, 0, 1], [4, 1.6666666666666665, 0, 0, 16, 69, 32, 2, 32, 0, 0], [20, 3.9999999999999996, 0, 0, 0, 0, 84, 3, 0, 0, 1], [14, 0.6666666666666666, 12, 10, 8, 0, 40, 5, 0, 0, 0], [20, 1.5, 18, 0, 0, 0, 84, 12, 12, 0, 1], [10, 8.666666666666666, 0, 0, 5, 45, 44, 0, 32, 0, 0], [14, 1.6666666666666665, 30, 10, 8, 0, 40, 2, 40, 0, 0], [4, 3.9999999999999996, 0, 8, 12, 15, 0, 0, 0, 0, 0], [20, 3.9999999999999996, 12, 0, 0, 0, 88, 4, 0, 0, 1], [20, 1.5, 18, 0, 0, 0, 88, 12, 0, 0, 1], [10, 1.5, 0, 2, 6, 30, 48, 2, 48, 0, 0], [14, 3.9999999999999996, 30, 8, 7, 0, 40, 0, 40, 0, 0], [10, 1.6666666666666665, 0, 0, 0, 0, 0, 3, 0, 0, 0], [10, 0, 0, 0, 0, 0, 0, 5, 0, 0, 0], [10, 1.6666666666666665, 0, 2, 1, 0, 0, 4, 0, 0, 0], [10, 0, 0, 10, 5, 24, 0, 6, 0, 0, 1], [10, 1.6666666666666665, 30, 10, 5, 24, 0, 5, 0, 0, 0], [10, 3.9999999999999996, 0, 0, 17, 60, 48, 3, 48, 0, 0], [20, 3.9999999999999996, 12, 0, 3, 0, 180, 8, 40, 0, 1], [20, 3.9999999999999996, 30, 10, 14, 30, 72, 3, 72, 0, 0], [10, 1.5, 18, 8, 21, 39, 0, 2, 0, 0, 0], [20, 1.5, 0, 0, 3, 0, 180, 13, 32, 0, 0], [20, 3.9999999999999996, 0, 0, 0, 0, 180, 7, 60, 0, 1], [14, 3.9999999999999996, 57, 10, 17, 15, 40, 0, 40, 0, 0], [20, 1.5, 18, 10, 14, 30, 40, 7, 0, 0, 0], [20, 1.5, 0, 0, 0, 0, 180, 17, 48, 0, 1], [4, 3.9999999999999996, 0, 0, 17, 60, 32, 0, 32, 0, 0], [20, 3.9999999999999996, 30, 0, 0, 0, 116, 7, 40, 0, 1], [14, 0.6666666666666666, 12, 10, 12, 0, 20, 5, 0, 0, 0], [10, 8.666666666666666, 18, 8, 13, 45, 12, 0, 12, 0, 0], [20, 1.5, 0, 0, 0, 0, 116, 12, 32, 0, 1], [4, 1.6666666666666665, 0, 2, 13, 45, 32, 2, 32, 0, 0], [20, 1.5, 0, 0, 0, 0, 72, 11, 0, 0, 1], [20, 3.9999999999999996, 12, 0, 0, 0, 72, 4, 0, 4, 1], [20, 3.6666666666666665, 18, 8, 4, 0, 32, 5, 12, 0, 0], [4, 3.9999999999999996, 0, 2, 9, 54, 32, 0, 32, 0, 0], [14, 1.6666666666666665, 30, 10, 8, 9, 40, 2, 40, 0, 0], [20, 3.9999999999999996, 0, 0, 0, 0, 36, 3, 0, 0, 1], [14, 0.6666666666666666, 12, 10, 8, 0, 20, 5, 0, 0, 0], [20, 1.5, 18, 0, 0, 0, 36, 12, 0, 0, 1], [10, 8.666666666666666, 0, 0, 5, 30, 44, 0, 32, 0, 0], [14, 1.6666666666666665, 30, 10, 8, 0, 20, 2, 20, 0, 0], [0, 1.6666666666666665, 0, 8, 19, 96, 20, 0, 20, 0, 0], [20, 3.9999999999999996, 57, 0, 10, 60, 72, 4, 40, 4, 1], [20, 1.5, 18, 0, 10, 60, 72, 11, 0, 0, 1], [4, 3.9999999999999996, 0, 2, 19, 114, 32, 0, 32, 0, 0], [20, 3.6666666666666665, 0, 10, 10, 15, 92, 5, 40, 0, 0], [4, 0.6666666666666666, 0, 0, 15, 15, 32, 0, 32, 0, 0], [14, 7.333333333333333, 57, 8, 14, 0, 60, 0, 60, 0, 0], [20, 7.333333333333333, 0, 0, 0, 0, 116, 8, 12, 0, 1], [10, 1.5, 18, 10, 17, 15, 0, 2, 0, 0, 0], [20, 8.166666666666666, 0, 0, 0, 0, 116, 10, 32, 0, 0], [4, 0.6666666666666666, 0, 8, 22, 60, 80, 0, 40, 0, 0], [4, 0.6666666666666666, 12, 10, 23, 90, 80, 0, 40, 0, 0], [10, 1.5, 18, 10, 15, 90, 152, 12, 60, 0, 1], [10, 1.5, 0, 2, 21, 120, 72, 2, 72, 0, 0], [10, 0.6666666666666666, 0, 10, 15, 90, 152, 12, 60, 0, 0], [20, 0.6666666666666666, 0, 8, 7, 0, 80, 8, 40, 0, 0], [20, 3.9999999999999996, 57, 10, 13, 39, 60, 3, 60, 4, 0], [20, 3.9999999999999996, 0, 0, 5, 30, 120, 4, 12, 0, 1], [20, 1.5, 18, 0, 5, 30, 120, 15, 0, 0, 1], [10, 4.833333333333333, 0, 0, 13, 84, 48, 2, 48, 0, 0], [10, 0.6666666666666666, 0, 8, 9, 15, 0, 3, 0, 0, 0], [20, 3.9999999999999996, 12, 0, 0, 0, 108, 8, 0, 4, 1], [20, 1.5, 18, 0, 0, 0, 108, 7, 0, 0, 1], [10, 3.9999999999999996, 0, 2, 6, 30, 48, 3, 48, 0, 0], [20, 4.833333333333333, 30, 10, 5, 0, 60, 2, 60, 0, 0], [20, 3.9999999999999996, 0, 0, 3, 0, 136, 7, 32, 0, 1], [4, 3.9999999999999996, 12, 0, 19, 45, 48, 0, 48, 0, 0], [14, 3.9999999999999996, 30, 10, 16, 0, 52, 0, 52, 0, 0], [20, 1.5, 18, 10, 16, 0, 40, 7, 0, 0, 0], [20, 1.5, 0, 0, 3, 0, 136, 16, 32, 0, 0], [20, 3.9999999999999996, 0, 0, 0, 0, 108, 7, 20, 0, 1], [14, 3.9999999999999996, 57, 10, 17, 30, 40, 0, 40, 0, 0], [20, 3.6666666666666665, 18, 8, 13, 15, 52, 5, 12, 0, 0], [20, 1.5, 0, 0, 0, 0, 108, 17, 16, 0, 1], [4, 1.6666666666666665, 0, 2, 18, 75, 32, 2, 32, 0, 0], [20, 3.9999999999999996, 0, 0, 0, 0, 84, 3, 0, 0, 1], [14, 0.6666666666666666, 12, 10, 8, 0, 40, 5, 0, 0, 0], [20, 1.5, 18, 0, 0, 0, 84, 12, 12, 0, 1], [4, 1.6666666666666665, 0, 2, 9, 45, 32, 2, 32, 0, 0], [20, 8.666666666666666, 30, 8, 4, 0, 52, 0, 40, 0, 0], [20, 8.666666666666666, 30, 8, 8, 0, 52, 0, 40, 0, 0], [4, 0.6666666666666666, 12, 10, 17, 15, 0, 0, 0, 0, 0], [20, 1.5, 18, 0, 0, 0, 132, 12, 12, 0, 1], [20, 3.9999999999999996, 0, 0, 0, 0, 132, 3, 48, 0, 1], [4, 1.6666666666666665, 0, 2, 13, 30, 32, 2, 32, 0, 0]]
