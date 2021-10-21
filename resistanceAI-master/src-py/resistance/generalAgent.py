@@ -296,7 +296,6 @@ class generalAgent(Agent):
                     # voted for a mission they are not on
                     self.resistanceData[i][VOTED_FOR_MISION_NOT_ON] += self.missionNum
         pass
-
     def betray(self, mission, proposer):
         '''
         mission is a list of agents to be sent on a mission. 
@@ -322,30 +321,26 @@ class generalAgent(Agent):
                 probability = 0.50
                 return random.random() <= probability
         else:
-            spy_count = sum(el in self.spy_list for el in mission)
-            if(self.number_of_players>=7 and spy_count<2):
-                # need a mission with more than 2 spies
-                return False
-            elif(self.number_of_players<7 and spy_count == 1):
-                # only need 1 betray
-                return True
-            elif(self.number_of_players<7 and spy_count==2):
-                # 2 spies and only need 1 to betray
-                probability = 0.75
-                return random.random() <= probability
-            elif(self.number_of_players<7 and spy_count>2):
-                # more than 2 spies and only need 1 to betray, more hesistation to betray
-                probability = 0.50
-                return random.random() <= probability
-            elif(self.number_of_players>=7 and spy_count ==2):
-                # need both spies to betray
-                return True
-            elif(self.number_of_players>=7 and spy_count >2):
-                #Hope that random choices you get at least 2 spies fail but also not exposing themself
-                # This situation is difficult since the spies can not communicate
-                # assume spies do a 50/50 
-                probability = 0.5
-                return random.random() <= probability
+            if(self.spyWins ==1):
+                spy_count = sum(el in self.spy_list for el in mission)
+                if(self.number_of_players>=7 and spy_count<2):
+                    # need a mission with more than 2 spies
+                    return False
+                elif(self.number_of_players<7 and spy_count == 1):
+                    # only need 1 betray
+                    return True
+                elif(self.number_of_players>=7 and spy_count ==2):
+                     # need both spies to betray
+                    return True
+                elif(self.number_of_players>=7 and spy_count >2):
+                    #Hope that random choices you get at least 2 spies fail but also not exposing themself
+                    # This situation is difficult since the spies can not communicate
+                    # assume spies do a 50/50 
+                    probability = 0.5
+                    return random.random() <= probability
+            else:
+                    # dont care about mission 4 will go for mission 5 win
+                    return False
 
 
     def mission_outcome(self, mission, proposer, betrayals, mission_success):

@@ -331,7 +331,7 @@ class bayesAgent(Agent):
                     # voted for a mission they are not on
                     self.resistanceData[i][VOTED_FOR_MISION_NOT_ON] += self.missionNum
             # Run predictions after significant data is added
-            if(self.spyWins > 1 or self.missionNum>2 or self.roundCount ==4 ):
+            if(self.spyWins > 1 or self.missionNum>2 or self.roundCount >=3 ):
                 self.predictedSpies = naiveBayesClassifier(self.resistanceData)
                 self.allPredictions.append(self.predictedSpies)
             else:
@@ -344,7 +344,7 @@ class bayesAgent(Agent):
         The agents on the mission are distinct and indexed between 0 and number_of_players, and include this agent.
         proposer is an int between 0 and number_of_players and is the index of the player who proposed the mission.
         The method should return True if this agent chooses to betray the mission, and False otherwise. 
-        Spy agent chooses whether to betray depending on the mission number and the number of spies with it on the mission
+        By default, spies will betray 30% of the time. 
         '''
         if(self.missionNum ==1):
             return False
@@ -363,30 +363,26 @@ class bayesAgent(Agent):
                 probability = 0.50
                 return random.random() <= probability
         else:
-            spy_count = sum(el in self.spy_list for el in mission)
-            if(self.number_of_players>=7 and spy_count<2):
-                # need a mission with more than 2 spies
-                return False
-            elif(self.number_of_players<7 and spy_count == 1):
-                # only need 1 betray
-                return True
-            elif(self.number_of_players<7 and spy_count==2):
-                # 2 spies and only need 1 to betray
-                probability = 0.75
-                return random.random() <= probability
-            elif(self.number_of_players<7 and spy_count>2):
-                # more than 2 spies and only need 1 to betray, more hesistation to betray
-                probability = 0.50
-                return random.random() <= probability
-            elif(self.number_of_players>=7 and spy_count ==2):
-                # need both spies to betray
-                return True
-            elif(self.number_of_players>=7 and spy_count >2):
-                #Hope that random choices you get at least 2 spies fail but also not exposing themself
-                # This situation is difficult since the spies can not communicate
-                # assume spies do a 50/50 
-                probability = 0.5
-                return random.random() <= probability
+            if(self.spyWins ==1):
+                spy_count = sum(el in self.spy_list for el in mission)
+                if(self.number_of_players>=7 and spy_count<2):
+                    # need a mission with more than 2 spies
+                    return False
+                elif(self.number_of_players<7 and spy_count == 1):
+                    # only need 1 betray
+                    return True
+                elif(self.number_of_players>=7 and spy_count ==2):
+                     # need both spies to betray
+                    return True
+                elif(self.number_of_players>=7 and spy_count >2):
+                    #Hope that random choices you get at least 2 spies fail but also not exposing themself
+                    # This situation is difficult since the spies can not communicate
+                    # assume spies do a 50/50 
+                    probability = 0.5
+                    return random.random() <= probability
+            else:
+                    # dont care about mission 4 will go for mission 5 win
+                    return False
                 
 
     def mission_outcome(self, mission, proposer, betrayals, mission_success):
@@ -529,46 +525,15 @@ from math import exp
 from math import pi
 
 def naiveBayesClassifier(resistanceData):
-    print(len(trainingDataLogicalSpy))
-    model = summarise_by_class(trainingDataLogicalSpy)
+    training_data_seperated = summarise_by_class(trainingDataLogicalSpy)
     spyPredictions = []
     for row in resistanceData:
         if(row[0] == "MyAgent"):
             spyPredictions.append("MyAgent")
         else:
-           
-            print(row[:IS_SPY])
-            spyPredictions.append(predict(model,row[:IS_SPY]))
-    
+            spyPredictions.append(predict(training_data_seperated,row[:IS_SPY]))
     print("SPY PREDICTIONS =",spyPredictions)
     return spyPredictions
-    
-
-def summarise_by_class(dataSet):
-    '''dataSet is the training dataset (data that has  spy (1) or not spy (0))'''
-    seperated = separate_by_class(dataSet)
-    summaries = dict()
-    for class_value, rows in seperated.items():
-        summaries[class_value] = summarise_dataset(rows)
-    return summaries
-
-# Split the dataset by class values, returns a dictionary
-def separate_by_class(dataset):
-	separated = dict()
-	for i in range(len(dataset)):
-		vector = dataset[i]
-		class_value = vector[-1]
-		if (class_value not in separated):
-			separated[class_value] = list()
-		separated[class_value].append(vector)
-
-	return separated
-
-def summarise_dataset(dataSet):
-    summaries = [(mean(column),stdev(column),len(column)) for column in zip(*dataSet)]
-    del(summaries[-1])
-    return summaries
-
 # Predict the class for a given row
 def predict(summaries,row):
     probabilities = calculate_class_probabilities(summaries, row)
@@ -579,24 +544,47 @@ def predict(summaries,row):
             best_label = class_value
     return best_label
 
+#Calculate the probabilites of predicting each class for row
+# added Laplace smoothing to help with values that are 0. Improves prediction by at least 5%!
 ALPHA_LAPLACE_SMOOTHING = 1
 def calculate_class_probabilities(summaries, row):
     total_rows = sum([summaries[label][0][2] for label in summaries])
-    
     probabilities = dict()
-    
     for class_value, class_summaries in summaries.items():
         probabilities[class_value] = summaries[class_value][0][2]+ALPHA_LAPLACE_SMOOTHING/float(total_rows)
-       
         for i in range(len(class_summaries)):
-            
             mean,stdev, _ = class_summaries[i]
             probabilities[class_value] *= calculate_probability(row[i],mean,stdev)
     return probabilities
 
+# Split the dataset by the resistance (0) and spy(1) then calculate statistics for each of the rows
+def summarise_by_class(dataSet):
+    '''dataSet is the training dataset (data that has  spy (1) or not spy (0))'''
+    seperated = separate_by_class(dataSet)
+    summaries = dict()
+    for class_value, rows in seperated.items():
+        summaries[class_value] = summarise_dataset(rows)
+    return summaries
+
+# Split the dataset by class values. class value is determeined by last index in array which is the IS_SPY, returns a dictionary
+def separate_by_class(dataset):
+	separated = dict()
+	for i in range(len(dataset)):
+		vector = dataset[i]
+		class_value = vector[IS_SPY]
+		if (class_value not in separated):
+			separated[class_value] = list()
+		separated[class_value].append(vector)
+
+	return separated
+# Calculate the mean, standard deviation and count for each column in the dataset
+def summarise_dataset(dataSet):
+    summaries = [(mean(column),stdev(column),len(column)) for column in zip(*dataSet)]
+    del(summaries[-1])
+    return summaries
 
 # Math Calculation Functions
-
+# Calculate the Gasuusian probability distributuion
 def calculate_probability(x,mean,stdev):
     exponent = exp(-((x-mean)**2/(2*stdev**2)))
     return(1/(sqrt(2*pi)*stdev))*exponent
