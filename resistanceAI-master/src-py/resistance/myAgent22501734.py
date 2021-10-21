@@ -585,7 +585,7 @@ def separate_by_class(dataset):
 		separated[isSpy].append(vector)
 	return separated
     
-# Calculate the mean, standard deviation and count for each column in the training dataset
+# Calculate the mean, standard deviation and count for each column in the training dataset and return the dictionary of these figures
 def summarise_dataset(dataSet):
     statistics = [(mean(column),stdev(column),len(column)) for column in zip(*dataSet)]
     del(statistics[-1])
