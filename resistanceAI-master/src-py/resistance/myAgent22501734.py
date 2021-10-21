@@ -1,6 +1,12 @@
 from agent import Agent
 import random
 
+###-----------------------------------------------###
+# Author: Shane Monck 22501734
+# Naive Bayes Classifier was made with help from :
+# https://machinelearningmastery.com/naive-bayes-classifier-scratch-python/ written by Jason Brownlee on 18-10-2019
+# 
+###-----------------------------------------------###
 
 #indexs of varibales in dataset
 
@@ -93,8 +99,8 @@ class bayesAgent(Agent):
         team.append(self.player_number)
         # For the first mission as resistance
         # I want my agent to pick itself and pick at random the team members for mission
-        if(self.missionNum ==1):
-            while len(team)<team_size:
+        if(self.missionNum == 1):
+            while len(team) < team_size:
                 agent = random.randrange(self.number_of_players)
                 if agent not in team:
                     team.append(agent)
@@ -102,53 +108,53 @@ class bayesAgent(Agent):
         else:
             onesInPredSpies = self.predictedSpies.count(1)
             # Pick agents that are predicted to not be spies as long as naive bayes has predicted the exact amount of spies in game
-            if(len(self.predictedSpies)!=0 and onesInPredSpies == self.howManySpies):
+            if(len(self.predictedSpies) != 0 and onesInPredSpies == self.howManySpies):
                 agentNum = 0
                 for prediction in self.predictedSpies:
-                    if(prediction==0):
-                        if(len(team)<team_size):
+                    if(prediction == 0):
+                        if(len(team) < team_size):
                             team.append(agentNum)
-                    agentNum+=1
+                    agentNum += 1
             # pick members that are the most trusting and not predicted to be a spy
-            if(len(team)<team_size):
+            if(len(team) < team_size):
                 for trustingAgents in self.wentOnSuccessfulMissions:
-                    if(len(team)<team_size):
+                    if(len(team) < team_size):
                         agent = random.choice(self.wentOnSuccessfulMissions)
                         if agent not in team and agent not in self.outedSpies:
-                            if(len(self.predictedSpies)!=0):
+                            if(len(self.predictedSpies) != 0):
                                 print("agent",agent,"predictedspies",self.predictedSpies)
-                                if(self.predictedSpies[agent]!=1):
+                                if(self.predictedSpies[agent] != 1):
                                     team.append(agent)
                             else:
                                 team.append(agent)
             # if still need team members
-            if(len(team)<team_size):
+            if(len(team) < team_size):
                 # pick members that have not failed any missions yet and not predicted to be a spy
                 for i in range(self.number_of_players):
-                    if((len(team)<team_size) and i not in self.wentOnFailedMissions):
+                    if((len(team) < team_size) and i not in self.wentOnFailedMissions):
                         if i not in team and i not in self.outedSpies:
-                            if(len(self.predictedSpies)!=0):
-                                if(self.predictedSpies[i]!=1):
+                            if(len(self.predictedSpies) != 0):
+                                if(self.predictedSpies[i] != 1):
                                     team.append(i)
                             else:
                                 team.append(i)
                 # last resort is to pick from random potentially picking member that potentially went on failed mission
                 # but do not pick any agents that have been found to be spies
-                while len(team)<team_size:
+                while len(team) < team_size:
                     agent = random.randrange(self.number_of_players)
                     if agent not in team and agent not in self.outedSpies:
                         team.append(agent)
         return team
 
-    def spy_propose(self,team_size,betrayals_required=1):
+    def spy_propose(self,team_size,betrayals_required = 1):
         ''' 
         Proposing the mission as the Spy
         '''
         team = []
         # put self on team with only other reistance members
-        if(self.missionNum !=4):
+        if(self.missionNum != 4):
             team.append(self.player_number)
-            while len(team)<team_size:
+            while len(team) < team_size:
                 agent = random.randrange(self.number_of_players)
                 if ((agent not in team) and agent not in self.spy_list):
                     team.append(agent)
@@ -158,9 +164,9 @@ class bayesAgent(Agent):
             if(self.spyWins == 1):
                 # add just 1 more spy to team spy if need 2 betrayals
                 if(betrayals_required == 2):   
-                    while len(team)<team_size:
+                    while len(team) < team_size:
                         spy_count = sum(el in self.spy_list for el in mission)
-                        if(spy_count==1):
+                        if(spy_count == 1):
                             agent = random.choice(self.spy_list)
                         else:
                             agent = random.randrange(self.number_of_players)
@@ -170,7 +176,7 @@ class bayesAgent(Agent):
                         if (agent not in team):
                             team.append(agent)
             # mission 4 but dont need to win mission 4 or need to win mission 4 but only need 1 betrayal
-            while len(team)<team_size:
+            while len(team) < team_size:
                     agent = random.randrange(self.number_of_players)
                     if (agent not in team and agent not in self.spy_list):
                         team.append(agent)
@@ -196,7 +202,7 @@ class bayesAgent(Agent):
         # should vote yes if in last round to avoid a mission fail     
         if(self.roundCount == 5):
             return True
-        if(self.missionNum ==1 ):
+        if(self.missionNum == 1):
             # no info to go off of for mission 1
             if(self.player_number in mission):
                 return True
@@ -204,7 +210,7 @@ class bayesAgent(Agent):
                 return False
         # Do not vote for a mission that know 100% is a spy
         outedSpiesCount = sum(el in self.outedSpies for el in mission)
-        if(outedSpiesCount!=0):
+        if(outedSpiesCount != 0):
             return False
         # Dont vote for mission if contains a predicted spy
         agentNum = 0 
@@ -212,10 +218,10 @@ class bayesAgent(Agent):
         for predictions in self.predictedSpies:
             if predictions == 1:
                 predSpies.append(agentNum)
-            agentNum+=1
+            agentNum += 1
         predSpiesCount = sum(el in predSpies for el in mission)
         print("predicted spies ",self.predictedSpies,"predected spies count ", predSpiesCount,"mission ",mission)
-        if predSpiesCount!=0:
+        if predSpiesCount != 0:
             return False
         if(proposer in self.outedSpies):
             return False
@@ -224,10 +230,10 @@ class bayesAgent(Agent):
         if(trustedAgentsCount == len(mission)):
             return True
         failedAgentsCount = sum(el in self.wentOnFailedMissions for el in mission)
-        if(failedAgentsCount >0):
+        if(failedAgentsCount > 0):
             return False
         # If there are some trust worthy members and members yet to be on mission return True
-        if(trustedAgentsCount>0 and failedAgentsCount ==0):
+        if(trustedAgentsCount > 0 and failedAgentsCount == 0):
             return True
         # No info about anyone on the team
         if(trustedAgentsCount == 0 and failedAgentsCount == 0): 
@@ -241,14 +247,14 @@ class bayesAgent(Agent):
         '''
         Determine the vote for a Spy agent
         '''    
-        if(self.missionNum ==1 ):
+        if(self.missionNum == 1 ):
             # Spies will never sabotage first mission so does not matter who goes
             return True
-        elif(self.missionNum != 1 and self.missionNum !=4):
+        elif(self.missionNum != 1 and self.missionNum != 4):
             # count amount of spies in mission
             spy_count = sum(el in self.spy_list for el in mission)
             # approve missions that has spies on it but not if mission is full of spies no mission has 0 spies
-            if(len(mission) != spy_count and spy_count!=0):
+            if(len(mission) != spy_count and spy_count != 0):
                 return True
             else:   
                 return False
@@ -256,13 +262,13 @@ class bayesAgent(Agent):
             # need to win mission 4  to win game
             if(self.spyWins == 1 ):
                 spy_count = sum(el in self.spy_list for el in mission)
-                if(self.number_of_players>=7 and spy_count<2):
+                if(self.number_of_players >= 7 and spy_count < 2):
                     # need a mission with more than 2 spies
                     return False
                     # mission needs 2 betrayals and contines 2 or more spies
-                elif(self.number_of_players>=7 and spy_count>=2):
+                elif(self.number_of_players >= 7 and spy_count >= 2):
                     return True
-                elif(self.number_of_players<7 and spy_count>0):
+                elif(self.number_of_players < 7 and spy_count > 0):
                     return True
                 else:
                     # Too many spies in team or no spies at all
@@ -272,9 +278,6 @@ class bayesAgent(Agent):
                 return True
         
     def vote(self, mission, proposer):
-        print("ROUND COUNT",self.roundCount)
-        print("The proposer = ",proposer)
-        
         '''
         mission is a list of agents to be sent on a mission. 
         The agents on the mission are distinct and indexed between 0 and number_of_players.
@@ -301,16 +304,16 @@ class bayesAgent(Agent):
         '''
         # Record vote data
         self.agentsWhoVoted = votes
-        self.roundCount +=1
+        self.roundCount += 1
         if(not self.is_spy()):
             if(proposer != self.player_number):
                 # if proposer proposed a mission that contains no succesful mission members
-                if(len(self.wentOnSuccessfulMissions)!=0):
+                if(len(self.wentOnSuccessfulMissions) != 0):
                     trustingMembersCount = sum(el in self.wentOnSuccessfulMissions for el in mission)
                     if(trustingMembersCount == 0):
                         self.resistanceData[proposer][PROPOSED_TEAM_THAT_HAVENT_BEEN_ON_MISSIONS] += 2*(self.missionNum)
                 # if proposer proposed a mission that contains failed mission members
-                if(len(self.wentOnFailedMissions)!=0):
+                if(len(self.wentOnFailedMissions) != 0):
                     unTrustingMembersCount = sum(el in self.wentOnFailedMissions for el in mission)
                     if(unTrustingMembersCount != 0):
                         self.resistanceData[proposer][PROPOSED_TEAM_HAS_UNSUCCESSFUL_MEMBERS] += 4*(self.missionNum*unTrustingMembersCount)
@@ -331,7 +334,7 @@ class bayesAgent(Agent):
                     # voted for a mission they are not on
                     self.resistanceData[i][VOTED_FOR_MISION_NOT_ON] += self.missionNum
             # Run predictions after significant data is added
-            if(self.spyWins > 1 or self.missionNum>2 or self.roundCount >=3 ):
+            if(self.spyWins > 1 or self.missionNum > 2 or self.roundCount >= 3 ):
                 self.predictedSpies = naiveBayesClassifier(self.resistanceData)
                 self.allPredictions.append(self.predictedSpies)
             else:
@@ -346,15 +349,15 @@ class bayesAgent(Agent):
         The method should return True if this agent chooses to betray the mission, and False otherwise. 
         By default, spies will betray 30% of the time. 
         '''
-        if(self.missionNum ==1):
+        if(self.missionNum == 1):
             return False
         elif(self.missionNum == 5):
             return True
-        elif(self.missionNum !=4):
+        elif(self.missionNum != 4):
             spy_count = sum(el in self.spy_list for el in mission)
-            if(spy_count ==1):
+            if(spy_count == 1):
                 return True
-            elif(spy_count==2):
+            elif(spy_count == 2):
                 # 75 chance of betrayal
                 probability = 0.75
                 return random.random() <= probability
@@ -363,18 +366,18 @@ class bayesAgent(Agent):
                 probability = 0.50
                 return random.random() <= probability
         else:
-            if(self.spyWins ==1):
+            if(self.spyWins == 1):
                 spy_count = sum(el in self.spy_list for el in mission)
-                if(self.number_of_players>=7 and spy_count<2):
+                if(self.number_of_players >= 7 and spy_count < 2):
                     # need a mission with more than 2 spies
                     return False
-                elif(self.number_of_players<7 and spy_count == 1):
+                elif(self.number_of_players < 7 and spy_count == 1):
                     # only need 1 betray
                     return True
-                elif(self.number_of_players>=7 and spy_count ==2):
+                elif(self.number_of_players >= 7 and spy_count == 2):
                      # need both spies to betray
                     return True
-                elif(self.number_of_players>=7 and spy_count >2):
+                elif(self.number_of_players >= 7 and spy_count > 2):
                     #Hope that random choices you get at least 2 spies fail but also not exposing themself
                     # This situation is difficult since the spies can not communicate
                     # assume spies do a 50/50 
@@ -384,7 +387,6 @@ class bayesAgent(Agent):
                     # dont care about mission 4 will go for mission 5 win
                     return False
                 
-
     def mission_outcome(self, mission, proposer, betrayals, mission_success):
         '''
         mission is a list of agents that were sent on the mission. 
@@ -406,7 +408,7 @@ class bayesAgent(Agent):
                 for i in range(self.number_of_players):
     
                     if i not in self.agentsWhoVoted:
-                        if(i ==self.player_number):
+                        if(i == self.player_number):
                             continue
                         # Increases sussness if agent did not want a successful mission to happen
                         self.resistanceData[i][REJECTED_TEAM_SUCCESFUL_MISSION] += 2*(self.missionNum)
@@ -416,7 +418,7 @@ class bayesAgent(Agent):
                 for agent in self.agentsWhoVoted:
                     if(agent is not self.player_number):
                         # Increase sussness if agent most liekly voted knowing mission would fail
-                        self.resistanceData[agent][VOTED_FOR_FAILED_MISSION]+= 2*(self.missionNum)
+                        self.resistanceData[agent][VOTED_FOR_FAILED_MISSION] += 2*(self.missionNum)
                 if(proposer is not self.player_number):
                     self.propFailedMissions.append(proposer)
                     propFailedMissionsCount = self.propFailedMissions.count(proposer)
@@ -441,7 +443,7 @@ class bayesAgent(Agent):
                         if(failedMissionsCount == 0):
                             failedMissionsCount = 1
                         self.resistanceData[agent][WENT_ON_FAILED_MISSION] += failedMissionsCount*self.missionNum*(betrayals/len(mission))
-            if((self.spyWins > 1 or self.missionNum>2) and self.missionNum!=5):
+            if((self.spyWins > 1 or self.missionNum > 2) and self.missionNum != 5):
                 # Run predictions after significant data is added
                 self.predictedSpies = naiveBayesClassifier(self.resistanceData)
                 self.allPredictions.append(self.predictedSpies)
@@ -449,7 +451,7 @@ class bayesAgent(Agent):
                 self.allPredictions.append([0])
         print("Outed spies",self.outedSpies)
         print("Predicted spies after mission",self.predictedSpies)
-        self.missionNum +=1
+        self.missionNum += 1
         pass
 
     def round_outcome(self, rounds_complete, missions_failed):
@@ -484,22 +486,22 @@ class bayesAgent(Agent):
                     continue
                 if(len(mission)== 2 and betrayals == 1):
                     self.outedSpies.append(stupidSpies)
-                if(len(mission)== 3 and betrayals ==2 ):
+                if(len(mission)== 3 and betrayals == 2):
                     self.outedSpies.append(stupidSpies)
                 if(len(mission) == 4 and betrayals == 3):
                     self.outedSpies.append(stupidSpies)
-                if(len(mission) == 5 and betrayals ==4):
+                if(len(mission) == 5 and betrayals == 4):
                     self.outedSpies.append(stupidSpies)
         # spies outed eachother
         else:
             for stupidSpies in mission:
-                if(len(mission) == 2 and betrayals ==2 ):
+                if(len(mission) == 2 and betrayals == 2):
                     self.outedSpies.append(stupidSpies)
-                if(len(mission) == 3 and betrayals ==3 ):
+                if(len(mission) == 3 and betrayals == 3):
                     self.outedSpies.append(stupidSpies)
-                if(len(mission) == 4 and betrayals ==4 ):
+                if(len(mission) == 4 and betrayals == 4):
                     self.outedSpies.append(stupidSpies)
-                if(len(mission) == 5 and betrayals ==5 ):
+                if(len(mission) == 5 and betrayals == 5):
                     self.outedSpies.append(stupidSpies)
 
     # Helper functions for data collection
@@ -513,7 +515,7 @@ class bayesAgent(Agent):
     def whoWon(self):
         if(self.spyWins > self.resistanceWins):
             return False
-        elif(self.resistanceWins >self.spyWins):
+        elif(self.resistanceWins > self.spyWins):
             return True
         else:
             return -1
@@ -537,8 +539,10 @@ def naiveBayesClassifier(resistanceData):
 # Predict the class for a given row
 def predict(summaries,row):
     probabilities = calculate_class_probabilities(summaries, row)
-    best_label, best_prob = None,-1
+    best_label = None
+    best_prob = -1
     for class_value,probability in probabilities.items():
+        # Find the maximum probable hypothesis
         if best_label is None or probability > best_prob:
             best_prob = probability
             best_label = class_value
@@ -551,13 +555,13 @@ def calculate_class_probabilities(summaries, row):
     total_rows = sum([summaries[label][0][2] for label in summaries])
     probabilities = dict()
     for class_value, class_summaries in summaries.items():
-        probabilities[class_value] = summaries[class_value][0][2]+ALPHA_LAPLACE_SMOOTHING/float(total_rows)
+        probabilities[class_value] = (summaries[class_value][0][2]+ALPHA_LAPLACE_SMOOTHING)/float(total_rows)
         for i in range(len(class_summaries)):
             mean,stdev, _ = class_summaries[i]
             probabilities[class_value] *= calculate_probability(row[i],mean,stdev)
     return probabilities
 
-# Split the dataset by the resistance (0) and spy(1) then calculate statistics for each of the rows
+# Split the dataset by the resistance (0) and spy (1) then calculate statistics for each of the rows
 def summarise_by_class(dataSet):
     '''dataSet is the training dataset (data that has  spy (1) or not spy (0))'''
     seperated = separate_by_class(dataSet)
@@ -575,7 +579,6 @@ def separate_by_class(dataset):
 		if (class_value not in separated):
 			separated[class_value] = list()
 		separated[class_value].append(vector)
-
 	return separated
 # Calculate the mean, standard deviation and count for each column in the dataset
 def summarise_dataset(dataSet):
