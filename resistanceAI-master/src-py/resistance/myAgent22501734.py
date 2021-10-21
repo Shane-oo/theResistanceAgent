@@ -3,9 +3,10 @@ import random
 
 ###-----------------------------------------------###
 # Author: Shane Monck 22501734
+# Agent that when is Resistance player uses a Naive Bayes Classifier to predict Spies.
 # Naive Bayes Classifier was made with help from :
 # https://machinelearningmastery.com/naive-bayes-classifier-scratch-python/ written by Jason Brownlee on 18-10-2019
-# 
+#
 ###-----------------------------------------------###
 
 #indexs of varibales in dataset
@@ -199,9 +200,6 @@ class bayesAgent(Agent):
         '''
         Determine vote for a resistance agent
         '''
-        # should vote yes if in last round to avoid a mission fail     
-        if(self.roundCount == 5):
-            return True
         if(self.missionNum == 1):
             # no info to go off of for mission 1
             if(self.player_number in mission):
@@ -450,8 +448,9 @@ class bayesAgent(Agent):
                 self.allPredictions.append(self.predictedSpies)
             else:
                 self.allPredictions.append([0])
-        print("Outed spies",self.outedSpies)
-        print("Predicted spies after mission",self.predictedSpies)
+            print("Predicted spies after mission",self.predictedSpies)
+            print("Outed spies",self.outedSpies)
+        
         self.missionNum += 1
         pass
 
@@ -531,7 +530,7 @@ from math import pi
 # Call when __init__ so to optimise time
 training_data_seperated = None
 def get_training_data():
-    globals()['training_data_seperated'] = summarise_by_class(trainingDataLogicalSpy)
+    globals()['training_data_seperated'] = get_stats_for_class(trainingDataLogicalSpy)
 
 def naiveBayesClassifier(resistanceData):
     spyPredictions = []
@@ -542,57 +541,55 @@ def naiveBayesClassifier(resistanceData):
             spyPredictions.append(predict(training_data_seperated,row[:IS_SPY]))
     return spyPredictions
 # Predict the class for a given row
-def predict(summaries,row):
-    probabilities = calculate_class_probabilities(summaries, row)
+def predict(statistics,row):
+    probabilities = calculate_is_spy_probabilities(statistics, row)
     best_label = None
     best_prob = -1
-    for class_value,probability in probabilities.items():
+    for isSpy,probability in probabilities.items():
         # Find the maximum probable hypothesis
         if best_label is None or probability > best_prob:
             best_prob = probability
-            best_label = class_value
+            best_label = isSpy
     return best_label
 
 #Calculate the probabilites of predicting each class for row
-# added Laplace smoothing to help with values that are 0. Improves prediction by at least 5%!
+# added Laplace smoothing to help with values that are 0.
 LAPLACE_SMOOTHING = 1
-def calculate_class_probabilities(summaries, row):
-    total_rows = sum([summaries[label][0][2] for label in summaries])
+def calculate_is_spy_probabilities(statistics, row):
+    total_rows = sum([statistics[label][0][2] for label in statistics])
     probabilities = dict()
-    print(row)
-    for column, class_summaries in summaries.items():
-        probabilities[column] = (summaries[column][0][2])/float(total_rows)
-        for i in range(len(class_summaries)):
-            mean,stdev, _ = class_summaries[i]
-            probabilities[column] *= gaussian_probability(row[i]+LAPLACE_SMOOTHING,mean,stdev)
+    for isSpy, class_stats in statistics.items():
+        probabilities[isSpy] = (statistics[isSpy][0][2])/float(total_rows)
+        for column in range(len(class_stats)):
+            mean,stdev,n = class_stats[column]
+            probabilities[isSpy] *= gaussian_probability(row[column]+LAPLACE_SMOOTHING,mean,stdev)
     return probabilities
 
 # Split the dataset by the resistance (0) and spy (1) then calculate statistics for each of the rows
-def summarise_by_class(dataSet):
+def get_stats_for_class(dataSet):
     '''dataSet is the training dataset (data that has  spy (1) or not spy (0))'''
     seperated = separate_by_class(dataSet)
-    summaries = dict()
-    for class_value, rows in seperated.items():
-        summaries[class_value] = summarise_dataset(rows)
-    print("MEAN, STD,n",summaries)
-    return summaries
+    statistics = dict()
+    for isSpy, rows in seperated.items():
+        statistics[isSpy] = summarise_dataset(rows)
+    return statistics
 
-# Split the dataset by class values. class value is determeined by last index in array which is the IS_SPY, returns a dictionary
+# Split the dataset by class values isSpy (1 For Spy 0 for Resistance). class value is determeined by last index in array which is the IS_SPY
 def separate_by_class(dataset):
 	separated = dict()
 	for i in range(len(dataset)):
 		vector = dataset[i]
-		class_value = vector[IS_SPY]
-		if (class_value not in separated):
-			separated[class_value] = list()
-		separated[class_value].append(vector)
+		isSpy = vector[IS_SPY]
+		if (isSpy not in separated):
+			separated[isSpy] = list()
+		separated[isSpy].append(vector)
 	return separated
     
 # Calculate the mean, standard deviation and count for each column in the training dataset
 def summarise_dataset(dataSet):
-    summaries = [(mean(column),stdev(column),len(column)) for column in zip(*dataSet)]
-    del(summaries[-1])
-    return summaries
+    statistics = [(mean(column),stdev(column),len(column)) for column in zip(*dataSet)]
+    del(statistics[-1])
+    return statistics
 
 # Math Calculation Functions
 # Calculate the Gaussian probability distribution
