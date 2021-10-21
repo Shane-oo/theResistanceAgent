@@ -29,7 +29,6 @@ PROPOSED_TEAM_THAT_HAVENT_BEEN_ON_MISSIONS = 9
 IS_SPY = 10
 
 class bayesAgent(Agent): 
-
     '''My agent in the game The Resistance'''
     def __init__(self, name='Rando'):
         '''
@@ -41,7 +40,7 @@ class bayesAgent(Agent):
         self.spyWins = 0
         self.resistanceWins = 0
         self.roundCount = 1
-       #Resistance Agent variables
+        #Resistance Agent variables
         self.resistanceData = []
         self.failedMissions = []
         self.propFailedMissions = []
@@ -587,6 +586,7 @@ def summarise_dataset(dataSet):
     return summaries
 
 # Math Calculation Functions
+
 # Calculate the Gasuusian probability distributuion
 def calculate_probability(x,mean,stdev):
     exponent = exp(-((x-mean)**2/(2*stdev**2)))
@@ -600,9 +600,13 @@ def stdev(numbers):
     variance = sum([(x-avg)**2 for x in numbers]) / float(len(numbers)-1)
     return sqrt(variance)
 
-
 '''
-    Training Data
+    Training Data comes from data collected from 40, 5 player games therefore array is 200 in length
+    The win percentage was 7.5% for resistance, so only 3 out of the 40 games were won by resistance.
+    This gives the best results as it seperate the Resistance to the Spies clearly for the Bayes Classifier
+
+    Apologies this is bad practise to have hard coded data but is essential for agent to be run in the tournament
+    Otherwise I would store data in a csv and read it into the program.
 '''
 trainingDataLogicalSpy =[[20, 3.9999999999999996, 30, 0, 0, 0, 116, 7, 40, 0, 1], [14, 0.6666666666666666, 12, 10, 12, 0, 40, 5, 0, 0, 0], [10, 8.666666666666666, 18, 8, 13, 45, 12, 0, 12, 0, 0], 
 [20, 1.5, 0, 0, 0, 0, 116, 12, 32, 0, 1], [4, 1.6666666666666665, 0, 2, 13, 45, 32, 2, 32, 0, 0], [20, 0.6666666666666666, 0, 0, 3, 0, 156, 16, 32, 0, 1], [4, 0.6666666666666666, 12, 2, 20, 30, 48, 0, 48, 0, 0],
