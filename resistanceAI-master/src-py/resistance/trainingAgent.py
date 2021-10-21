@@ -1,3 +1,5 @@
+from agent import Agent
+import random
 ###-----------------------------------------------###
 # Author: Shane Monck 22501734
 # Agent that is used for collecting the training data used in the bayesAgent
