@@ -50,6 +50,8 @@ class bayesAgent(Agent):
         self.predictedSpies = []
         # helper array for determing prediction accuracy
         self.allPredictions = []
+        # Seperate and get the training data for later use in predicting
+        get_training_data()
 
     def new_game(self, number_of_players, player_number, spy_list):
         '''
@@ -121,7 +123,6 @@ class bayesAgent(Agent):
                         agent = random.choice(self.wentOnSuccessfulMissions)
                         if agent not in team and agent not in self.outedSpies:
                             if(len(self.predictedSpies) != 0):
-                                print("agent",agent,"predictedspies",self.predictedSpies)
                                 if(self.predictedSpies[agent] != 1):
                                     team.append(agent)
                             else:
@@ -219,7 +220,7 @@ class bayesAgent(Agent):
                 predSpies.append(agentNum)
             agentNum += 1
         predSpiesCount = sum(el in predSpies for el in mission)
-        print("predicted spies ",self.predictedSpies,"predected spies count ", predSpiesCount,"mission ",mission)
+        print("predicted spies ",self.predictedSpies,"predicted spies count ", predSpiesCount,"mission ",mission)
         if predSpiesCount != 0:
             return False
         if(proposer in self.outedSpies):
@@ -283,6 +284,7 @@ class bayesAgent(Agent):
         proposer is an int between 0 and number_of_players and is the index of the player who proposed the mission.
         The function should return True if the vote is for the mission, and False if the vote is against the mission.
         '''
+        print("Voting for mission",self.missionNum,"Round", self.roundCount)
         #always return True if agent is the proposer
         if(proposer == self.player_number):
             print("agent is proposer return True")
@@ -525,15 +527,19 @@ from math import sqrt
 from math import exp
 from math import pi
 
+# Global for seperating the training data 
+# Call when __init__ so to optimise time
+training_data_seperated = None
+def get_training_data():
+    globals()['training_data_seperated'] = summarise_by_class(trainingDataLogicalSpy)
+
 def naiveBayesClassifier(resistanceData):
-    training_data_seperated = summarise_by_class(trainingDataLogicalSpy)
     spyPredictions = []
     for row in resistanceData:
         if(row[0] == "MyAgent"):
             spyPredictions.append("MyAgent")
         else:
             spyPredictions.append(predict(training_data_seperated,row[:IS_SPY]))
-    print("SPY PREDICTIONS =",spyPredictions)
     return spyPredictions
 # Predict the class for a given row
 def predict(summaries,row):
