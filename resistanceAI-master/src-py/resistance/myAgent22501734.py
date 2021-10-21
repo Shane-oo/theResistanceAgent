@@ -344,7 +344,7 @@ class bayesAgent(Agent):
         The agents on the mission are distinct and indexed between 0 and number_of_players, and include this agent.
         proposer is an int between 0 and number_of_players and is the index of the player who proposed the mission.
         The method should return True if this agent chooses to betray the mission, and False otherwise. 
-        By default, spies will betray 30% of the time. 
+        Spy agent chooses whether to betray depending on the mission number and the number of spies with it on the mission
         '''
         if(self.missionNum ==1):
             return False
@@ -399,7 +399,7 @@ class bayesAgent(Agent):
         It iss not expected or required for this function to return anything.
         '''
         self.roundCount = 1
-        # Record mission data
+        # Record mission data for resistance agent
         if(not self.is_spy()):
             if(mission_success):
                 self.resistanceWins += 1
@@ -446,13 +446,13 @@ class bayesAgent(Agent):
                             failedMissionsCount = 1
                         self.resistanceData[agent][WENT_ON_FAILED_MISSION] += failedMissionsCount*self.missionNum*(betrayals/len(mission))
             if((self.spyWins > 1 or self.missionNum>2) and self.missionNum!=5):
-            # Run predictions after significant data is added
+                # Run predictions after significant data is added
                 self.predictedSpies = naiveBayesClassifier(self.resistanceData)
                 self.allPredictions.append(self.predictedSpies)
             else:
                 self.allPredictions.append([0])
         print("Outed spies",self.outedSpies)
-        print("predicted spies after mission",self.predictedSpies)
+        print("Predicted spies after mission",self.predictedSpies)
         self.missionNum +=1
         pass
 
