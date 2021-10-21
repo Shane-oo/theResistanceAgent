@@ -555,15 +555,16 @@ def predict(summaries,row):
 
 #Calculate the probabilites of predicting each class for row
 # added Laplace smoothing to help with values that are 0. Improves prediction by at least 5%!
-ALPHA_LAPLACE_SMOOTHING = 1
+LAPLACE_SMOOTHING = 1
 def calculate_class_probabilities(summaries, row):
     total_rows = sum([summaries[label][0][2] for label in summaries])
     probabilities = dict()
-    for class_value, class_summaries in summaries.items():
-        probabilities[class_value] = (summaries[class_value][0][2]+ALPHA_LAPLACE_SMOOTHING)/float(total_rows)
+    print(row)
+    for column, class_summaries in summaries.items():
+        probabilities[column] = (summaries[column][0][2])/float(total_rows)
         for i in range(len(class_summaries)):
             mean,stdev, _ = class_summaries[i]
-            probabilities[class_value] *= calculate_probability(row[i],mean,stdev)
+            probabilities[column] *= gaussian_probability(row[i]+LAPLACE_SMOOTHING,mean,stdev)
     return probabilities
 
 # Split the dataset by the resistance (0) and spy (1) then calculate statistics for each of the rows
@@ -573,6 +574,7 @@ def summarise_by_class(dataSet):
     summaries = dict()
     for class_value, rows in seperated.items():
         summaries[class_value] = summarise_dataset(rows)
+    print("MEAN, STD,n",summaries)
     return summaries
 
 # Split the dataset by class values. class value is determeined by last index in array which is the IS_SPY, returns a dictionary
@@ -585,17 +587,17 @@ def separate_by_class(dataset):
 			separated[class_value] = list()
 		separated[class_value].append(vector)
 	return separated
-# Calculate the mean, standard deviation and count for each column in the dataset
+    
+# Calculate the mean, standard deviation and count for each column in the training dataset
 def summarise_dataset(dataSet):
     summaries = [(mean(column),stdev(column),len(column)) for column in zip(*dataSet)]
     del(summaries[-1])
     return summaries
 
 # Math Calculation Functions
-
-# Calculate the Gasuusian probability distributuion
-def calculate_probability(x,mean,stdev):
-    exponent = exp(-((x-mean)**2/(2*stdev**2)))
+# Calculate the Gaussian probability distribution
+def gaussian_probability(column_value,mean,stdev):
+    exponent = exp(-((column_value-mean)**2/(2*stdev**2)))
     return(1/(sqrt(2*pi)*stdev))*exponent
 
 def mean(numbers):
